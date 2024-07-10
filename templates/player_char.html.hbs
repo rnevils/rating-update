@@ -1,201 +1,250 @@
 <!DOCTYPE html>
 <html class="has-navbar-fixed-top">
-  <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-  <head>
-    <title>{{player.name}} ({{player.data.character_name}}) | RATING UPDATE</title>
+<head>
+  {{#if (not player.hidden_status)}}
+  <title>{{player.name}} ({{player.data.character_name}}) | RATING UPDATE</title>
     <meta property="og:title" content="{{player.name}} - {{player.data.character_name}} {{player.data.rating_value}} ±{{player.data.rating_deviation}} ({{player.data.game_count}} games)" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/android-chrome-192x192.png">
-    <meta property="og:description" content="Glicko2 ratings for Guilty Gear Strive" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
-    <meta name="msapplication-TileColor" content="#da532c">
-    <meta name="theme-color" content="#ffffff">
-    <link href="/styles.css" rel="stylesheet" type="text/css">
-    <script src="https://kit.fontawesome.com/ec45b90910.js" crossorigin="anonymous"></script>
-    <script src="/scripts.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  {{/if}}
 
-  </head>
+  {{#if player.hidden_status}}
+  <title>Player has opted out | RATING UPDATE</title>
+  {{/if}}
 
-  
-  <body onload="
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/android-chrome-192x192.png">
+  <meta property="og:description" content="Glicko2 ratings for Guilty Gear Strive" />
+  <meta http-equiv="refresh" content="60">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="theme-color" content="#ffffff">
+  <link href="/styles.css" rel="stylesheet" type="text/css">
+  <script src="https://kit.fontawesome.com/ec45b90910.js" crossorigin="anonymous"></script>
+  <script src="/scripts.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+</head>
+
+
+<body onload="
       char_id = '{{char_id}}';
         load_history();
     ">
-    {{> navbar}}
-    {{#if (not player.hidden_status)}}
-    <section class="hero is-primary">
-      <div class="hero-body has-text-centered">
-        <p class="title">
-          {{#if player.vip_status}}
-            <span class="tag is-warning is-medium">VIP</span>
-          {{/if}}
-          {{player.name}}
-          <span class="tag is-medium">{{player.platform}}</span>
-        </p>
-        {{#if player.cheater_status}}
+  {{> navbar}}
+  {{#if (not player.hidden_status)}}
+  <section class="hero is-primary">
+    <div class="hero-body has-text-centered">
+      <p class="title">
+        {{#if player.vip_status}}
+        <span class="tag is-warning is-medium">VIP</span>
+        {{/if}}
+        {{player.name}}
+        <span class="tag is-medium">{{player.platform}}</span>
+      </p>
+      {{#if player.cheater_status}}
           <strong class="subtitle">This user has been flagged for cheating by community reports. ({{player.cheater_status}})</strong>
-        {{/if}}
-        {{#if player.other_names}}
-          <div class="tags is-justify-content-center">
-            <span class="tag is-medium">AKA:</span>
-            {{#each player.other_names}}
-              <span class="tag is-danger is-medium">{{this}}</span>
-            {{/each}}
-          </div>
-        {{/if}}
+      {{/if}}
+      {{#if player.other_names}}
+      <div class="tags is-justify-content-center">
+        <span class="tag is-medium">AKA:</span>
+        {{#each player.other_names}}
+        <span class="tag is-danger is-medium">{{this}}</span>
+        {{/each}}
       </div>
-    </section>
-    <section class="section">
-      <div class="container">
-        <div class="columns is-flex-wrap-wrap-reverse">
-          <div class="column is-three-quarters-fullhd">
-            <div class="content">
+      {{/if}}
+    </div>
+  </section>
+  <section class="section">
+    <div class="container">
+      <div class="columns is-flex-wrap-wrap-reverse">
+        <div class="column is-three-quarters-fullhd">
+          <div class="content">
 
-              <div id="modal" class="modal">
+            <div id="modal" class="modal">
 
-                <!-- Modal content -->
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <span class="close">&times;</span>
-                    <h2>Opt out from rating update</h2>
-                  </div>
-                  <div class="modal-body">
+              <!-- Modal content -->
+              <div class="modal-content">
+                <div class="modal-header">
+                  <span class="close">&times;</span>
+                  <h2>Opt out from rating update</h2>
+                </div>
+                <div class="modal-body">
                     To opt out put the following code in your R-Code comment section: <span id="code" class="bold"></span> <span id="loader" class="loader"/></span></hr>
                     <img src="/example.jpg"/>
-                  </div>
-
                 </div>
 
               </div>
 
-              <h2>
-                {{player.data.character_name}} Rating:
-                {{#if player.cheater_status}}
-                  ({{player.data.game_count}} games)
-                {{else}}
-                  {{player.data.rating_value}} ±{{player.data.rating_deviation}} ({{player.data.game_count}} games)
-                {{/if}}
-                {{#if player.data.character_rank}}
-                  <span class="tag is-danger is-medium">#{{player.data.character_rank}} {{player.data.character_name}}</span>
-                {{/if}}
-                {{#if player.data.global_rank}}
-                  <span class="tag is-warning is-medium">#{{player.data.global_rank}} Overall</span>
-                {{/if}}
-              </h2>
-              {{#if player.data.top_rating_value}}
-                  <h4>Top rating:
-                      {{player.data.top_rating_value}}±{{player.data.top_rating_deviation}} ({{player.data.top_rating_timestamp}})
-                  </h4>
-              {{/if}}
-              {{#if player.data.top_defeated_id}}
-                  <h4>Top defeated:
-                      <a href="/player/{{player.data.top_defeated_id}}/{{player.data.top_defeated_char_id}}">
-                          <span class="maybe_long_name" title="{{name}}">{{player.data.top_defeated_name}}</span>
-                          <span>({{player.data.top_defeated_char_id}})</span>
-                      </a>
-                      {{player.data.top_defeated_value}}±{{player.data.top_defeated_deviation}} ({{player.data.top_defeated_timestamp}})
-                  </h4>
-              {{/if}}
-
-              <div id="history_wrapper">
-                  <h2>Match History</h2>
-                  <button id="decrement_button" onclick="decrement_page()">←</button>
-                  <span id="current_page" style="min-width: 7em; display: inline-block;">Loading...</span>
-                  <button onclick="increment_page()">→</button>
-                  <div id="history">
-                      <p>Loading match history..<p>
-                  </div>
-              </div>
-          {{#if player.data.matchups}}
-            <h2>Matchups</h2>
-            <div class="table-container">
-              <table>
-                <tr>
-                  <th>Matchup</th>
-                  <th>Games</th>
-                  <th>Win rate</th>
-                  <th>Rating offset</th>
-                </tr>
-                {{#each player.data.matchups}}
-                  <tr>
-                    <td>{{this.character}}</td>
-                    <td class="centered">{{this.game_count}}</td>
-                    <td class="centered">{{this.win_rate}}%</td>
-                    <td title="{{this.rating}} ±{{this.rating_deviation}}" class="{{this.rating_change_class}} centered">{{this.rating_offset}}</td>
-                  </tr>
-                {{/each}}
-                  <tr>
-                      <td><b>Overall</b></td>
-                    <td class="centered"><b>{{player.data.game_count}}</b></td>
-                    <td class="centered"><b>{{player.data.win_rate}}%</b></td>
-                    <td></td>
-                  </tr>
-              </table>
             </div>
+
+            <h2>
+              {{player.data.character_name}} Rating:
+              {{#if player.cheater_status}}
+              ({{player.data.game_count}} games)
+              {{else}}
+              {{player.data.rating_value}} ±{{player.data.rating_deviation}} ({{player.data.game_count}} games)
+              {{/if}}
+              {{#if player.data.character_rank}}
+                  <span class="tag is-danger is-medium">#{{player.data.character_rank}} {{player.data.character_name}}</span>
+              {{/if}}
+              {{#if player.data.global_rank}}
+              <span class="tag is-warning is-medium">#{{player.data.global_rank}} Overall</span>
+              {{/if}}
+            </h2>
+            {{#if player.data.top_rating_value}}
+            <h4>Top rating:
+                      {{player.data.top_rating_value}}±{{player.data.top_rating_deviation}} ({{player.data.top_rating_timestamp}})
+            </h4>
+            {{/if}}
+            {{#if player.data.top_defeated_id}}
+            <h4>Top defeated:
+              <a href="/player/{{player.data.top_defeated_id}}/{{player.data.top_defeated_char_id}}">
+                <span class="maybe_long_name" title="{{name}}">{{player.data.top_defeated_name}}</span>
+                <span>({{player.data.top_defeated_char_id}})</span>
+              </a>
+                      {{player.data.top_defeated_value}}±{{player.data.top_defeated_deviation}} ({{player.data.top_defeated_timestamp}})
+            </h4>
+            {{/if}}
+
+            <div id="history_wrapper">
+              <h2>Match History</h2>
+              <button id="decrement_button" onclick="decrement_page()">←</button>
+              <span id="current_page" style="min-width: 7em; display: inline-block;">Loading...</span>
+              <button onclick="increment_page()">→</button>
+              <div id="history">
+                <p>Loading match history..<p>
+            </div>
+          </div>
+
+          <div id="chart_wrapper">
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+              var ratings = [];
+              {{#each rating_history}}
+              ratings.push({{ this}});
+              {{/each }}
+              ratings.reverse();
+              ratings.push({{ player.data.rating_value }});
+
+              document.addEventListener("DOMContentLoaded", function (event) {
+
+                const ctx = document.getElementById('ratings');
+                var labels = [];
+                for (var i = 0; i < ratings.length; i++) {
+                  labels.push("");
+                }
+                new Chart(ctx, {
+                  type: 'line',
+                  options: {
+                    events: ['mousemove', 'mouseout', 'touchstart', 'touchmove'],
+                    responsive: false,
+                  },
+                  data: {
+                    labels: labels,
+                    datasets: [
+                      {
+                        label: 'Last 100 games',
+                        borderColor: 'whitesmoke',
+                        data: ratings
+                      }
+                    ]
+                  }
+                });
+              });
+
+            </script>
+
+            <div id="chart" style="overflow:auto;"><canvas id="ratings" style="min-width:1000px;min-height:400px;"></canvas></div>
+          </div>
+
+          {{#if player.data.matchups}}
+          <h2>Matchups</h2>
+          <div class="table-container">
+            <table>
+              <tr>
+                <th>Matchup</th>
+                <th>Games</th>
+                <th>Win rate</th>
+                <th>Rating offset</th>
+              </tr>
+              {{#each player.data.matchups}}
+              <tr>
+                <td>{{this.character}}</td>
+                <td class="centered">{{this.game_count}}</td>
+                <td class="centered">{{this.win_rate}}%</td>
+                  <td title="{{this.rating}} ±{{this.rating_deviation}}" class="{{this.rating_change_class}} centered">{{this.rating_offset}}</td>
+              </tr>
+              {{/each}}
+              <tr>
+                <td><b>Overall</b></td>
+                <td class="centered"><b>{{player.data.game_count}}</b></td>
+                <td class="centered"><b>{{player.data.win_rate}}%</b></td>
+                <td></td>
+              </tr>
+            </table>
+          </div>
           {{/if}}
-            <div>
-          <button class="tag is-danger is-medium" onclick="toggle_profile('{{player.id}}');">Hide my profile</button>
+          <div>
+            <button class="tag is-danger is-medium" onclick="toggle_profile('{{player.id}}');">Hide my profile</button>
           </div>
         </div>
       </div>
       <div class="column is-one-quarter-fullhd">
+        <span>This page will refresh every minute.</span>
         <hr>
         <aside class="menu">
-            <p class="menu-label">
+          <p class="menu-label">
             Characters:
-            </p>
-            <ul class="menu-list">
+          </p>
+          <ul class="menu-list">
             {{#each player.other_characters}}
-                <li class="charTab">
-                <a href="/player/{{../player.id}}/{{this.character_shortname}}">
-                    {{#if ../player.cheater_status}}
-                    {{this.character_name}} ({{this.game_count}} games)
-                    {{else}}
-                    {{this.character_name}} {{this.rating_value}} ±{{this.rating_deviation}} ({{this.game_count}} games)
-                    {{/if}}
-                </a>
-                </li>
+            <li class="charTab">
+              <a href="/player/{{../player.id}}/{{this.character_shortname}}">
+                {{#if ../player.cheater_status}}
+                {{this.character_name}} ({{this.game_count}} games)
+                {{else}}
+                {{this.character_name}} {{this.rating_value}} ±{{this.rating_deviation}} ({{this.game_count}} games)
+                {{/if}}
+              </a>
+            </li>
             {{/each}}
-            </ul>
+          </ul>
         </aside>
         <hr>
       </div>
-      </div>
-    </section>
-    {{else}}
-        <section class="hero is-primary">
-      <div class="hero-body has-text-centered">
-                      <div id="modal" class="modal">
+    </div>
+  </section>
+  {{else}}
+  <section class="hero is-primary">
+    <div class="hero-body has-text-centered">
+      <div id="modal" class="modal">
 
-                <!-- Modal content -->
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <span class="close">&times;</span>
-                    <h2>Opt out from rating update</h2>
-                  </div>
-                  <div class="modal-body">
-                    To confirm that this is your profile, put the following code in your R-Code comment section: <span id="code" class="bold"></span> <span id="loader" class="loader"/></span>, close it, and wait for this page to refresh. After the profile has been confirmed you can change your R-code comment back to whatever you want.</hr>
-                    <img src="/example.jpg"/>
-                  </div>
-
-                </div>
-
-              </div>
-        <p class="title bold">Player has chosen to opt out of rating update.</p>
-        <div><button class="tag is-danger is-medium" onclick="toggle_profile('{{player.id}}');">Enable my profile</button></div>
+        <!-- Modal content -->
+        <div class="modal-content">
+          <div class="modal-header">
+            <span class="close">&times;</span>
+            <h2>Opt out from rating update</h2>
+          </div>
+          <div class="modal-body">
+            To confirm that this is your profile, put the following code in your R-Code comment section: <span id="code" class="bold"></span> <span id="loader" class="loader"/></span>, close it, and wait for this page to refresh. After the profile has been confirmed you can change your R-code comment back to whatever you want.</hr>
+            <img src="/example.jpg"/>
+          </div>
         </div>
-        </section>
-    {{/if}}
+      </div>
+      <p class="title bold">Player has chosen to opt out of rating update.</p>
+        <div><button class="tag is-danger is-medium" onclick="toggle_profile('{{player.id}}');">Enable my profile</button></div>
+    </div>
+  </section>
+  {{/if}}
 
-  </body>
+</body>
 
-  <script type="text/javascript">
+<script type="text/javascript">
 
   var span = document.getElementsByClassName("close")[0];
   let timer = null;
@@ -216,7 +265,7 @@
     }
   }
 
-  
+
   function toggle_profile(player_id) {
     var modal = document.getElementById("modal");
     modal.style.display = "block";
@@ -265,7 +314,7 @@
 
     counter++;
   }
-  </script>
-  {{> footer }}
+</script>
+{{> footer }}
 
 </html>

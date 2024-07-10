@@ -1,18 +1,22 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use futures::prelude::*;
+use async_std::sync::{Arc, Mutex};
+use rating_update::{rater, website::DbWrite};
 
 fn load_player(c: &mut Criterion) {
+    
     let runtime = tokio::runtime::Runtime::new().unwrap();
     let http_client = reqwest::Client::new();
+    let db_write_arc = DbWrite{arc: Arc::new(Mutex::new(0))};
 
     runtime.block_on(async {
-        tokio::spawn(rating_update::website::run());
+        tokio::spawn(rating_update::website::run(db_write_arc));
     });
 
     c.bench_function("load_player", |b| {
         // Find a number of players to run the benchmark on
         let players = {
-            let db_connection = rusqlite::Connection::open(rating_update::rater::DB_NAME).unwrap();
+            let db_connection = rusqlite::Connection::open(rater::DB_NAME.to_owned()).unwrap();
             let mut stmt = db_connection
                 .prepare("SELECT id, char_id FROM ranking_global LIMIT 50")
                 .unwrap();

@@ -3,3 +3,5 @@ static/sass/
 ratings.sqlite
 *.sqlite-journal
 output.log
+.vscode/
+.env

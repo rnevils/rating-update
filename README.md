@@ -3,7 +3,7 @@ Ratings for Guilty Gear: Strive
 
 ## How does this work?
 
-Replays are pulled from Strive's servers using [ggst-api-rs](https://github.com/xynxynxyn/ggst-api-rs). They are then processed using a modified Glicko algorithm, which you can read more about [here](docs/modified-glicko.md).
+Replays are pulled from Strive's servers, they are then processed using a modified Glicko algorithm, which you can read more about [here](docs/modified-glicko.md).
 
 ## Customizing
 Download [Bulma's](https://bulma.io/) sass source files and place the contents in /static/sass. Use the sass executable via npm to generate styles **.css** from styles. **scss**.

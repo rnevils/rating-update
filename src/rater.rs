@@ -1,19 +1,20 @@
 use crate::{ggst_api, glicko, glicko::Rating, responses, website};
-use anyhow::Context;
 use chrono::{NaiveDateTime, Utc};
 use fxhash::{FxHashMap, FxHashSet};
 use lazy_static::lazy_static;
 use rusqlite::{
     functions::FunctionFlags, named_params, params, Connection, OptionalExtension, Row, Transaction,
 };
-use std::{sync::Mutex, time::Duration};
-use tokio::{time, try_join};
+use std::time::Duration;
+use tokio::time;
+
+use async_std::sync::Mutex;
+use website::DbWrite;
 
 const DECAY_CONSTANT: f64 = 3.1;
 
 pub const LOW_DEVIATION: f64 = 75.0;
 pub const HIGH_RATING: f64 = 1800.0;
-pub const DB_NAME: &str = "ratings.sqlite";
 
 const CHAR_COUNT: usize = website::CHAR_NAMES.len();
 pub const POP_RATING_BRACKETS: usize = 13;
@@ -24,6 +25,7 @@ pub const STATISTICS_PERIOD: i64 = 6 * 60 * 60;
 
 lazy_static! {
     pub static ref RUNTIME_DATA: Mutex<RuntimeData> = Mutex::new(RuntimeData {});
+    pub static ref DB_NAME: String = dotenv::var("DATABASE_PATH").expect("DATABASE_PATH must be set.");
 }
 
 pub struct RuntimeData {}
@@ -33,7 +35,7 @@ type Result<T> = std::result::Result<T, anyhow::Error>;
 pub fn init_database() -> Result<()> {
     info!("Intializing database");
 
-    let conn = Connection::open(DB_NAME)?;
+    let conn = Connection::open(DB_NAME.to_owned())?;
     conn.execute_batch(include_str!("../init.sql"))?;
 
     Ok(())
@@ -41,14 +43,14 @@ pub fn init_database() -> Result<()> {
 
 pub fn reset_database() -> Result<()> {
     info!("Resetting database");
-    let conn = Connection::open(DB_NAME)?;
+    let conn = Connection::open(DB_NAME.to_owned())?;
     conn.execute_batch(include_str!("../reset.sql"))?;
 
     Ok(())
 }
 
 pub fn reset_names() -> Result<()> {
-    let mut conn = Connection::open(DB_NAME)?;
+    let mut conn = Connection::open(DB_NAME.to_owned())?;
 
     let tx = conn.transaction()?;
 
@@ -76,19 +78,19 @@ pub fn reset_names() -> Result<()> {
 }
 
 pub fn reset_distribution() -> Result<()> {
-    let mut conn = Connection::open(DB_NAME)?;
+    let mut conn = Connection::open(DB_NAME.to_owned())?;
 
     update_player_distribution(&mut conn);
 
     Ok(())
 }
 
-pub async fn run() -> Result<()> {
-    pull_and_update_continuous().await
+pub async fn run(db_write_arc: DbWrite) -> Result<()> {
+    pull_and_update_continuous(db_write_arc).await
 }
 
-async fn pull_and_update_continuous() -> Result<()> {
-    let mut conn = Connection::open(DB_NAME).unwrap();
+async fn pull_and_update_continuous(db_write_arc: DbWrite) -> Result<()> {
+    let mut conn = Connection::open(DB_NAME.to_owned()).unwrap();
     grab_games(&mut conn, 100).await.unwrap();
 
     let mut last_ranking_update: i64 =
@@ -99,6 +101,9 @@ async fn pull_and_update_continuous() -> Result<()> {
 
     loop {
         interval.tick().await;
+        
+        let db_write = db_write_arc.arc.lock().await;
+
         if let Err(e) = grab_games(&mut conn, 10).await {
             error!("grab_games failed: {}", e)
         }
@@ -113,6 +118,9 @@ async fn pull_and_update_continuous() -> Result<()> {
             )
             .await?
         }
+        
+        drop(db_write);
+
     }
 }
 
@@ -168,7 +176,7 @@ pub async fn update_statistics(
 }
 
 pub async fn update_once() {
-    let mut conn = Connection::open(DB_NAME).unwrap();
+    let mut conn = Connection::open(DB_NAME.to_owned()).unwrap();
 
     while update_ratings(&mut conn, None) > 0 {
         update_rankings(&mut conn).unwrap();
@@ -197,7 +205,7 @@ pub async fn update_once() {
 }
 
 pub fn print_rankings() {
-    let conn = Connection::open(DB_NAME).unwrap();
+    let conn = Connection::open(DB_NAME.to_owned()).unwrap();
 
     println!("| Rank | Name | Character | Rating | Games |");
     println!("|------|------|-----------|--------|-------|");
@@ -235,7 +243,7 @@ pub fn print_rankings() {
 pub fn mark_vip(vip_id: &str, notes: &str) {
     let vip_id = i64::from_str_radix(vip_id, 16).unwrap();
 
-    let conn = Connection::open(DB_NAME).unwrap();
+    let conn = Connection::open(DB_NAME.to_owned()).unwrap();
     conn.execute(
         "INSERT INTO vip_status
             VALUES(?, 'VIP', ?)",
@@ -247,7 +255,7 @@ pub fn mark_vip(vip_id: &str, notes: &str) {
 pub fn mark_hidden(hidden_id: &str, notes: &str) {
     let hidden_id = i64::from_str_radix(hidden_id, 16).unwrap();
 
-    let conn = Connection::open(DB_NAME).unwrap();
+    let conn = Connection::open(DB_NAME.to_owned()).unwrap();
     conn.execute(
         "INSERT INTO hidden_status
             VALUES(?, 'hidden', ?)",
@@ -263,7 +271,7 @@ pub async fn mark_cheater(
 ) {
     let cheater_id = i64::from_str_radix(cheater_id.unwrap(), 16).unwrap();
 
-    let conn = Connection::open(DB_NAME).unwrap();
+    let conn = Connection::open(DB_NAME.to_owned()).unwrap();
 
     struct Game {
         id_a: i64,
@@ -349,7 +357,7 @@ pub async fn mark_cheater(
 }
 
 pub async fn update_fraud_once() {
-    let mut conn = Connection::open(DB_NAME).unwrap();
+    let mut conn = Connection::open(DB_NAME.to_owned()).unwrap();
 
     if let Err(e) = calc_fraud_index(&mut conn) {
         error!("calc_fraud_index failed: {}", e);
@@ -357,7 +365,7 @@ pub async fn update_fraud_once() {
 }
 
 pub async fn update_decay_once() {
-    let mut conn = Connection::open(DB_NAME).unwrap();
+    let mut conn = Connection::open(DB_NAME.to_owned()).unwrap();
 
     update_decay(&mut conn, Utc::now().timestamp()).unwrap();
 }
@@ -373,7 +381,7 @@ pub fn get_average_rating(conn: &Transaction, id: i64) -> f64 {
 }
 
 pub async fn pull() {
-    let mut conn = Connection::open(DB_NAME).unwrap();
+    let mut conn = Connection::open(DB_NAME.to_owned()).unwrap();
 
     grab_games(&mut conn, 100).await.unwrap();
 }
@@ -1331,7 +1339,7 @@ pub fn calc_character_popularity(conn: &mut Connection, last_timestamp: i64) -> 
 }
 
 pub fn update_rankings_once() {
-    let mut conn = Connection::open(DB_NAME).unwrap();
+    let mut conn = Connection::open(DB_NAME.to_owned()).unwrap();
     update_rankings(&mut conn).unwrap();
 }
 
@@ -1438,7 +1446,7 @@ pub fn update_decay(conn: &mut Connection, timestamp: i64) -> Result<()> {
 }
 
 pub async fn test_decay_matchups() {
-    let mut conn = Connection::open(DB_NAME).unwrap();
+    let mut conn = Connection::open(DB_NAME.to_owned()).unwrap();
 
     decay_matchups(&mut conn, Utc::now().timestamp()).unwrap();
 }

@@ -5,6 +5,9 @@ use rand::distributions::{Alphanumeric, DistString};
 use rocket::serde::{json::Json, Serialize};
 use rusqlite::{named_params, params, Connection, OptionalExtension};
 
+use rocket::State;
+use website::DbWrite;
+
 use crate::{
     glicko,
     glicko::Rating,
@@ -96,7 +99,7 @@ impl Activity {
         let sub_1300 = conn
             .query_row(
                 "SELECT COUNT(*) FROM game_ratings WHERE timestamp > ?
-                    AND (value_a < 1200 OR value_b < 1300)",
+                    AND (value_a < 1300 OR value_b < 1300)",
                 params![t],
                 |r| r.get(0),
             )
@@ -313,20 +316,6 @@ pub async fn daily_character_games(
         })
         .await,
     )
-}
-pub async fn add_hit(_conn: &RatingsDbConn, _page: String) {
-    //TODO figure out a way of implementing this that doesn't cause more DB pressure.
-
-    //conn.run(move |conn| {
-    //    conn.execute("INSERT OR IGNORE INTO hits VALUES(?, 0)", params![&page])
-    //        .unwrap();
-    //    conn.execute(
-    //        "UPDATE hits SET hit_count = hit_count + 1 WHERE page = ?",
-    //        params![&page],
-    //    )
-    //    .unwrap();
-    //})
-    //.await;
 }
 
 #[derive(Serialize)]
@@ -990,6 +979,71 @@ pub async fn get_recent_sets(conn: &RatingsDbConn) -> Vec<RecentSet> {
         todo!()
     })
     .await
+}
+
+pub async fn get_player_rating_history(
+    conn: &RatingsDbConn,
+    id: i64,
+    char_id: i64,
+    game_count: i64,
+) -> Option<Vec::<f64>> {
+    if let Ok(res) = conn.run(move |conn| {
+        let history: Vec<f64> = {
+            let mut stmt = conn
+                .prepare_cached(
+                    "SELECT
+                            timestamp,
+                            value_a AS own_value,
+                            cheater_status,
+                            hidden_status
+                        FROM games NATURAL JOIN game_ratings
+                        LEFT JOIN vip_status ON vip_status.id = games.id_b
+                        LEFT JOIN cheater_status ON cheater_status.id = games.id_b
+                        LEFT JOIN hidden_status ON hidden_status.id = games.id_b
+                        WHERE games.id_a= :id AND games.char_a = :char_id
+
+                        UNION
+
+                        SELECT
+                            timestamp,
+                            value_b AS own_value,
+                            cheater_status,
+                            hidden_status
+                        FROM games NATURAL JOIN game_ratings
+                        LEFT JOIN vip_status ON vip_status.id = games.id_a
+                        LEFT JOIN cheater_status ON cheater_status.id = games.id_a
+                        LEFT JOIN hidden_status ON hidden_status.id = games.id_a
+                        WHERE games.id_b = :id AND games.char_b = :char_id
+
+                        ORDER BY timestamp DESC LIMIT :game_count",
+                )
+                ?;
+
+            let mut rows = stmt
+                .query(named_params! {
+                    ":id" : id,
+                    ":char_id": char_id,
+                    ":game_count":game_count,
+                })
+                .unwrap();
+            let mut history = Vec::<f64>::new();
+            while let Some(row) = rows.next().unwrap() {
+                let own_value: f64 = row.get("own_value").unwrap();
+                //let opponent_cheater: Option<String> = row.get("cheater_status").unwrap();
+                //let opponent_hidden: Option<String> = row.get("hidden_status").unwrap();
+
+                history.push(own_value);
+            }
+            history
+        };
+
+        Result::Ok(Some(history))
+    })
+    .await {
+        res
+    } else {
+        None
+    }
 }
 
 pub async fn get_player_char_history(
@@ -2474,9 +2528,10 @@ pub async fn outcomes(conn: RatingsDbConn) -> Json<(Vec<i64>, Vec<f64>, Vec<f64>
 }
 
 #[get("/api/hide/<player>")]
-pub async fn start_hide_player(conn: RatingsDbConn, player: &str) -> Json<String> {
+pub async fn start_hide_player(conn: RatingsDbConn, player: &str, lock: &State<DbWrite>) -> Json<String> {
     let id = i64::from_str_radix(&player, 16).unwrap();
     let player_code = Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
+    let db_write = lock.arc.lock().await;
 
     let code = conn
         .run(move |conn| {
@@ -2508,12 +2563,13 @@ pub async fn start_hide_player(conn: RatingsDbConn, player: &str) -> Json<String
             player_code
         })
         .await;
+    drop(db_write);
 
     Json(code)
 }
 
 #[get("/api/hide/poll/<player>")]
-pub async fn poll_hide_player(conn: RatingsDbConn, player: &str) -> Json<bool> {
+pub async fn poll_hide_player(conn: RatingsDbConn, player: &str, lock: &State<DbWrite>) -> Json<bool> {
     info!("Starting poll hide player");
     if let Ok(id) = i64::from_str_radix(&player, 16) {
         let code: String = conn
@@ -2546,6 +2602,7 @@ pub async fn poll_hide_player(conn: RatingsDbConn, player: &str) -> Json<bool> {
 
             if found {
                 info!("Found code, setting hidden status");
+                let db_write = lock.arc.lock().await;
                 conn.run(move |conn| {
                     let exists: i64 = conn.query_row(
                         "SELECT count(id) FROM hidden_status WHERE id=? and hidden_status is not null",
@@ -2570,7 +2627,7 @@ pub async fn poll_hide_player(conn: RatingsDbConn, player: &str) -> Json<bool> {
                         ).unwrap();
                     }
                 }).await;
-
+                drop(db_write);
                 return Json(true);
             }
             Json(false)

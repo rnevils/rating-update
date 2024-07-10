@@ -3,7 +3,6 @@ use aes_gcm::{
     aead::{generic_array::GenericArray, Aead},
     Aes256Gcm, KeyInit,
 };
-//use getrandom::getrandom;
 use hex;
 use lazy_static::lazy_static;
 use reqwest::header;

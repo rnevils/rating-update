@@ -10,6 +10,8 @@ use rocket_dyn_templates::Template;
 use rocket_sync_db_pools::database;
 use rusqlite::Connection;
 use std::path::{Path, PathBuf};
+use async_std::sync::{Arc, Mutex};
+use chrono::Utc;
 
 pub const CHAR_NAMES: &[(&str, &str)] = &[
     ("SO", "Sol"),
@@ -39,12 +41,32 @@ pub const CHAR_NAMES: &[(&str, &str)] = &[
     ("JN", "Johnny"),
     ("EL", "Elphelt"),
     ("AB", "A.B.A."),
+    ("SL", "Slayer"),
 ];
 
-pub async fn run() {
+#[database("ratings")]
+pub struct RatingsDbConn(Connection);
+
+pub struct DbWrite {
+    pub arc: Arc<Mutex<i32>>
+}
+
+pub async fn run(arc_in: DbWrite) {
     let _ = rocket::build()
         .attach(RatingsDbConn::fairing())
         .attach(Template::fairing())
+        .attach(rocket::fairing::AdHoc::on_liftoff("Pramga", |rocket| {
+            Box::pin(async move {
+                let db = RatingsDbConn::get_one(rocket).await.unwrap();
+                db.run(move |conn| {
+                    let _: i32 =
+                        conn.query_row("PRAGMA busy_timeout = 2000;",
+                        [],
+                        |row| row.get(0) ).unwrap();
+                }).await;
+            })
+        }))
+        .manage(arc_in)
         .mount(
             "/",
             routes![
@@ -96,9 +118,6 @@ pub async fn run() {
         .unwrap();
 }
 
-#[database("ratings")]
-pub struct RatingsDbConn(Connection);
-
 #[get("/")]
 async fn index() -> Redirect {
     Redirect::to(uri!(top_all))
@@ -106,14 +125,14 @@ async fn index() -> Redirect {
 
 #[get("/about")]
 async fn about(conn: RatingsDbConn) -> Cached<Template> {
-    api::add_hit(&conn, format!("about")).await;
-
     #[derive(Serialize)]
     struct Context {
         all_characters: &'static [(&'static str, &'static str)],
+        current_time: String,
     }
     let context = Context {
         all_characters: CHAR_NAMES,
+        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("about", &context), 999)
@@ -121,14 +140,14 @@ async fn about(conn: RatingsDbConn) -> Cached<Template> {
 
 #[get("/rating_calculator")]
 async fn rating_calculator(conn: RatingsDbConn) -> Cached<Template> {
-    api::add_hit(&conn, format!("rating_calculator")).await;
-
     #[derive(Serialize)]
     struct Context {
         all_characters: &'static [(&'static str, &'static str)],
+        current_time: String,
     }
     let context = Context {
         all_characters: CHAR_NAMES,
+        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("rating_calculator", &context), 999)
@@ -136,16 +155,16 @@ async fn rating_calculator(conn: RatingsDbConn) -> Cached<Template> {
 
 #[get("/stats")]
 async fn stats(conn: RatingsDbConn) -> Cached<Template> {
-    api::add_hit(&conn, format!("stats")).await;
-
     #[derive(Serialize)]
     struct Context {
         stats: api::Stats,
         all_characters: &'static [(&'static str, &'static str)],
+        current_time: String,
     }
     let context = Context {
         stats: api::stats_inner(&conn).await,
         all_characters: CHAR_NAMES,
+        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("stats", &context), 999)
@@ -153,11 +172,12 @@ async fn stats(conn: RatingsDbConn) -> Cached<Template> {
 
 #[get("/supporters")]
 async fn supporters(conn: RatingsDbConn) -> Cached<Template> {
-    api::add_hit(&conn, format!("supporters")).await;
     #[derive(Serialize)]
     struct Context {
         players: Vec<api::VipPlayer>,
         all_characters: &'static [(&'static str, &'static str)],
+        current_time: String,
+        
     }
 
     Cached::new(
@@ -166,6 +186,7 @@ async fn supporters(conn: RatingsDbConn) -> Cached<Template> {
             &Context {
                 players: api::get_supporters(&conn).await,
                 all_characters: CHAR_NAMES,
+                current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
             },
         ),
         999,
@@ -174,18 +195,18 @@ async fn supporters(conn: RatingsDbConn) -> Cached<Template> {
 
 #[get("/top/all")]
 async fn top_all(conn: RatingsDbConn) -> Cached<Template> {
-    api::add_hit(&conn, format!("top/all")).await;
-
     #[derive(Serialize)]
     struct Context {
         players: Vec<api::RankingPlayer>,
         all_characters: &'static [(&'static str, &'static str)],
+        current_time: String,
     }
 
     let players = api::top_all_inner(&conn).await;
     let context = Context {
         players,
         all_characters: CHAR_NAMES,
+        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("top_100", &context), 999)
@@ -193,14 +214,13 @@ async fn top_all(conn: RatingsDbConn) -> Cached<Template> {
 
 #[get("/top/<character_short>")]
 async fn top_char(conn: RatingsDbConn, character_short: &str) -> Option<Cached<Template>> {
-    api::add_hit(&conn, format!("top/{}", character_short)).await;
-
     #[derive(Serialize)]
     struct Context {
         players: Vec<api::RankingPlayer>,
         character: &'static str,
         character_short: &'static str,
         all_characters: &'static [(&'static str, &'static str)],
+        current_time: String,
     }
 
     if let Some(char_code) = CHAR_NAMES.iter().position(|(c, _)| *c == character_short) {
@@ -212,6 +232,7 @@ async fn top_char(conn: RatingsDbConn, character_short: &str) -> Option<Cached<T
             character,
             character_short,
             all_characters: CHAR_NAMES,
+            current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
         };
 
         Some(Cached::new(Template::render("top_100_char", &context), 999))
@@ -222,8 +243,6 @@ async fn top_char(conn: RatingsDbConn, character_short: &str) -> Option<Cached<T
 
 #[get("/matchups")]
 async fn matchups(conn: RatingsDbConn) -> Cached<Template> {
-    api::add_hit(&conn, format!("matchups")).await;
-
     #[derive(Serialize)]
     struct Context {
         character_shortnames: Vec<&'static str>,
@@ -232,6 +251,7 @@ async fn matchups(conn: RatingsDbConn) -> Cached<Template> {
         matchups_proportional: Vec<api::CharacterMatchups>,
         matchups_top_100: Vec<api::CharacterMatchups>,
         all_characters: &'static [(&'static str, &'static str)],
+        current_time: String,
     }
 
     let (matchups_global, matchups_top_1000, matchups_proportional, matchups_top_100) = tokio::join!(
@@ -248,6 +268,7 @@ async fn matchups(conn: RatingsDbConn) -> Cached<Template> {
         matchups_proportional,
         matchups_top_100,
         all_characters: CHAR_NAMES,
+        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("matchups", &context), 999)
@@ -255,8 +276,6 @@ async fn matchups(conn: RatingsDbConn) -> Cached<Template> {
 
 #[get("/character_popularity")]
 async fn character_popularity(conn: RatingsDbConn) -> Cached<Template> {
-    api::add_hit(&conn, format!("character_popularity")).await;
-
     #[derive(Serialize)]
     struct Context {
         character_shortnames: Vec<&'static str>,
@@ -266,6 +285,7 @@ async fn character_popularity(conn: RatingsDbConn) -> Cached<Template> {
         fraud_stats_higher_rated: Vec<api::FraudStats>,
         fraud_stats_highest_rated: Vec<api::FraudStats>,
         all_characters: &'static [(&'static str, &'static str)],
+        current_time: String,
     }
 
     let (
@@ -307,6 +327,7 @@ async fn character_popularity(conn: RatingsDbConn) -> Cached<Template> {
         fraud_stats_higher_rated,
         fraud_stats_highest_rated,
         all_characters: CHAR_NAMES,
+        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("character_popularity", &context), 999)
@@ -319,13 +340,12 @@ async fn player_distr_forward() -> Redirect {
 
 #[get("/player_distribution")]
 async fn player_distribution(conn: RatingsDbConn) -> Cached<Template> {
-    api::add_hit(&conn, format!("player_distribution")).await;
-
     #[derive(Serialize)]
     struct Context {
         floors: Vec<api::FloorPlayers>,
         ratings: Vec<api::RatingPlayers>,
         all_characters: &'static [(&'static str, &'static str)],
+        current_time: String,
     }
 
     let (floors, ratings) = tokio::join!(
@@ -336,6 +356,7 @@ async fn player_distribution(conn: RatingsDbConn) -> Cached<Template> {
         floors,
         ratings,
         all_characters: CHAR_NAMES,
+        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("player_distribution", &context), 999)
@@ -343,8 +364,6 @@ async fn player_distribution(conn: RatingsDbConn) -> Cached<Template> {
 
 #[get("/player/<player_id>")]
 async fn player(conn: RatingsDbConn, player_id: &str) -> Option<Redirect> {
-    api::add_hit(&conn, format!("player/{}", player_id)).await;
-
     if let Ok(id) = i64::from_str_radix(player_id, 16) {
         if let Some(char_id) = api::get_player_highest_rated_character(&conn, id).await {
             let char_short = CHAR_NAMES[char_id as usize].0;
@@ -368,8 +387,6 @@ async fn player_char_history(
     offset: Option<i64>,
     group_games: Option<bool>,
 ) -> Option<Cached<Template>> {
-    api::add_hit(&conn, format!("player/{}/{}/history", player_id, char_id)).await;
-
     if let Ok(id) = i64::from_str_radix(player_id, 16) {
         let char_id = CHAR_NAMES.iter().position(|(c, _)| *c == char_id)? as i64;
         let game_count = game_count.unwrap_or(100);
@@ -397,8 +414,6 @@ async fn player_char(
     player_id: &str,
     char_id: &str,
 ) -> Option<Cached<Template>> {
-    api::add_hit(&conn, format!("player/{}/{}", player_id, char_id)).await;
-
     if let Ok(id) = i64::from_str_radix(player_id, 16) {
         let char_id_i64 = CHAR_NAMES.iter().position(|(c, _)| *c == char_id)? as i64;
 
@@ -409,6 +424,8 @@ async fn player_char(
             player: api::PlayerDataChar,
             all_characters: &'static [(&'static str, &'static str)],
             hidden_status: bool,
+            rating_history: Vec::<f64>, 
+            current_time: String,
         }
 
         if let Ok(Some(player)) = api::get_player_data_char(&conn, id, char_id_i64).await {
@@ -418,12 +435,16 @@ async fn player_char(
                 hidden_status = true;
             }
 
+            let rating_history = api::get_player_rating_history(&conn, id, char_id_i64, 100).await.unwrap();
+
             let context = Context {
                 player_id: player_id.to_owned(),
                 char_id: char_id.to_owned(),
-                hidden_status,
                 player,
                 all_characters: CHAR_NAMES,
+                hidden_status,
+                rating_history,
+                current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
             };
             Some(Cached::new(Template::render("player_char", &context), 999))
         } else {
@@ -436,12 +457,12 @@ async fn player_char(
 
 #[get("/?<name>")]
 async fn search(conn: RatingsDbConn, name: String) -> Template {
-    api::add_hit(&conn, format!("search/{}", name)).await;
     #[derive(Serialize)]
     struct Context {
         search_string: String,
         players: Vec<api::SearchResultPlayer>,
         all_characters: &'static [(&'static str, &'static str)],
+        current_time: String,
     }
 
     let players = api::search_inner(&conn, name.clone(), false).await;
@@ -452,6 +473,7 @@ async fn search(conn: RatingsDbConn, name: String) -> Template {
             players,
             search_string: name,
             all_characters: CHAR_NAMES,
+            current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
         },
     )
 }

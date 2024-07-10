@@ -19,14 +19,14 @@
         <a class="navbar-item" href="/player_distribution">Distribution</a>  
         <a class="navbar-item" href="/about">FAQ</a>
         <a class="navbar-item" href="/stats">Stats</a>
-        <a class="navbar-item" href="http://ratingupdate.info/supporters">Supporters</a>  
+        <!-- <a class="navbar-item" href="/supporters">Supporters</a> -->
         <div class="navbar-item has-dropdown is-hoverable">
           <a class="navbar-link">
             Characters
           </a>
-          <div class="navbar-dropdown">
+          <div style="width: 320px;" class="navbar-dropdown">
             {{#each all_characters}}
-            <a class="navbar-item" href="/top/{{this.[0]}}">{{this.[1]}}</a>
+            <a style="width: 100px; display: inline-flex;" class="navbar-item" href="/top/{{this.[0]}}">{{this.[1]}}</a>
             {{/each}}
           </div>
         </div>
@@ -44,34 +44,21 @@
             </div>
 			    </form>
       	</div>
-        <a class="navbar-item" href="https://github.com/halvnykterist/rating-update/">
+        <span class="navbar-item">
+          {{current_time}}
+        </span>
+        <a class="navbar-item" href="https://discord.gg/vY4mE8exXB" target="_blank">
+          <span class="icon-text">
+            <span class="icon">
+              <i class="fab fa-discord"></i>
+            </span>
+            <span></span>
+          </span>
+        </a>
+        <a class="navbar-item" href="https://github.com/nemasu/rating-update" target="_blank">
           <span class="icon-text">
             <span class="icon">
               <i class="fab fa-github"></i>
-            </span>
-            <span></span>
-          </span>
-        </a>
-        <a class="navbar-item" href="https://twitter.com/sov_gott_games/">
-          <span class="icon-text">
-            <span class="icon">
-              <i class="fab fa-twitter"></i>
-            </span>
-            <span></span>
-          </span>
-        </a>
-        <a class="navbar-item" href="https://ko-fi.com/halvnykterist">
-          <span class="icon-text">
-            <span class="icon">
-              <i class="fas fa-coffee"></i>
-            </span>
-            <span></span>
-          </span>
-        </a>
-        <a class="navbar-item" href="https://www.patreon.com/halvnykterist">
-          <span class="icon-text">
-            <span class="icon">
-              <i class="fab fa-patreon"></i>
             </span>
             <span></span>
           </span>
