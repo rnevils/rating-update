@@ -15,7 +15,6 @@
   <meta property="og:type" content="website" />
   <meta property="og:image" content="/android-chrome-192x192.png">
   <meta property="og:description" content="Glicko2 ratings for Guilty Gear Strive" />
-  <meta http-equiv="refresh" content="60">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -26,6 +25,7 @@
   <link href="/styles.css" rel="stylesheet" type="text/css">
   <script src="https://kit.fontawesome.com/ec45b90910.js" crossorigin="anonymous"></script>
   <script src="/scripts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
 </head>
@@ -122,55 +122,6 @@
           </div>
 
           <div id="chart_wrapper">
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-            <script>
-              var chart;
-
-              document.addEventListener("DOMContentLoaded", function (event) {
-                LoadChart(100);
-              });
-
-              function LoadChart(game_count) {
-                fetch("/api/rating_history/{{player_id}}/{{char_id}}?game_count="+game_count).then(function(response) {
-                  return response.json();
-                }).then(function(data) {
-                  data.reverse();
-                  data.push({{ player.data.rating_value }});
-                  
-                  const ctx = document.getElementById('ratings');
-
-                  var labels = [];
-                  for (var i = 0; i < data.length; i++) {
-                    labels.push("");
-                  }
-
-                  if( chart ) {
-                    chart.data.labels=labels;
-                    chart.data.datasets[0].label='Last ' + game_count + ' games';
-                    chart.data.datasets[0].data=data;
-                    chart.update();
-                  } else {
-                    chart = new Chart(ctx, {
-                      type: 'line',
-                      options: {
-                        events: ['mousemove', 'mouseout', 'touchstart', 'touchmove'],
-                        responsive: false,
-                      },
-                      data: {
-                        labels: labels,
-                        datasets: [
-                          {
-                            label: 'Last 100 games',
-                            borderColor: 'whitesmoke',
-                            data: data
-                          }
-                        ]
-                      }
-                    });
-                  }
-                });
-              }
-            </script>
             <br />
             <div>
             <span><button class="tag is-light" onclick="LoadChart(100);">Last 100</button></span>
@@ -215,7 +166,7 @@
         </div>
       </div>
       <div class="column is-one-quarter-fullhd">
-        <span>This page will refresh every minute.</span>
+        <input id="id_toggleRefresh" onclick="toggleRefresh();" type="checkbox"> <span>Check this box to refresh automatically.</span>
         <hr>
         <aside class="menu">
           <p class="menu-label">
@@ -265,6 +216,78 @@
 </body>
 
 <script type="text/javascript">
+
+  var chart;
+  var timeout;
+
+  document.addEventListener("DOMContentLoaded", function (event) {
+    LoadChart(100);
+
+    let autoRefresh = localStorage.getItem("autoRefresh") || false;
+    if( autoRefresh ) {
+      document.getElementById("id_toggleRefresh").checked = true;
+      timeout = setTimeout(function() {
+        location.reload();
+      }, 70000);
+    }
+
+  });
+
+  function toggleRefresh() {
+    let autoRefresh = localStorage.getItem("autoRefresh") || false;
+
+    if(!autoRefresh) {
+      localStorage.setItem("autoRefresh", true);
+      timeout = setTimeout(function() {
+        location.reload();
+      }, 70000);
+
+    } else {
+      localStorage.removeItem("autoRefresh");
+      clearTimeout(timeout);
+    }
+  }
+
+  function LoadChart(game_count) {
+    fetch("/api/rating_history/{{player_id}}/{{char_id}}?game_count="+game_count).then(function(response) {
+      return response.json();
+    }).then(function(data) {
+      data.reverse();
+      data.push({{ player.data.rating_value }});
+      
+      const ctx = document.getElementById('ratings');
+
+      var labels = [];
+      for (var i = 0; i < data.length; i++) {
+        labels.push("");
+      }
+
+      if( chart ) {
+        chart.data.labels=labels;
+        chart.data.datasets[0].label='Last ' + game_count + ' games';
+        chart.data.datasets[0].data=data;
+        chart.update();
+      } else {
+        chart = new Chart(ctx, {
+          type: 'line',
+          options: {
+            events: ['mousemove', 'mouseout', 'touchstart', 'touchmove'],
+            responsive: false,
+          },
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Last 100 games',
+                borderColor: 'whitesmoke',
+                data: data
+              }
+            ]
+          }
+        });
+      }
+    });
+  }
 
   var span = document.getElementsByClassName("close")[0];
   let timer = null;
@@ -324,7 +347,7 @@
         clearInterval(timer);
         let loader = document.getElementById("loader");
         loader.className = "";
-        loader.textContent = "✅";
+        loader.textContent = "✅";  
         setTimeout(() => {
           location.reload();
         }, 5000);
