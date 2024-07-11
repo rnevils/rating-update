@@ -124,41 +124,61 @@
           <div id="chart_wrapper">
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <script>
-              var ratings = [];
-              {{#each rating_history}}
-              ratings.push({{ this}});
-              {{/each }}
-              ratings.reverse();
-              ratings.push({{ player.data.rating_value }});
+              var chart;
 
               document.addEventListener("DOMContentLoaded", function (event) {
-
-                const ctx = document.getElementById('ratings');
-                var labels = [];
-                for (var i = 0; i < ratings.length; i++) {
-                  labels.push("");
-                }
-                new Chart(ctx, {
-                  type: 'line',
-                  options: {
-                    events: ['mousemove', 'mouseout', 'touchstart', 'touchmove'],
-                    responsive: false,
-                  },
-                  data: {
-                    labels: labels,
-                    datasets: [
-                      {
-                        label: 'Last 100 games',
-                        borderColor: 'whitesmoke',
-                        data: ratings
-                      }
-                    ]
-                  }
-                });
+                LoadChart(100);
               });
 
-            </script>
+              function LoadChart(game_count) {
+                fetch("/api/rating_history/{{player_id}}/{{char_id}}?game_count="+game_count).then(function(response) {
+                  return response.json();
+                }).then(function(data) {
+                  data.reverse();
+                  data.push({{ player.data.rating_value }});
+                  
+                  const ctx = document.getElementById('ratings');
 
+                  var labels = [];
+                  for (var i = 0; i < data.length; i++) {
+                    labels.push("");
+                  }
+
+                  if( chart ) {
+                    chart.data.labels=labels;
+                    chart.data.datasets[0].label='Last ' + game_count + ' games';
+                    chart.data.datasets[0].data=data;
+                    chart.update();
+                  } else {
+                    chart = new Chart(ctx, {
+                      type: 'line',
+                      options: {
+                        events: ['mousemove', 'mouseout', 'touchstart', 'touchmove'],
+                        responsive: false,
+                      },
+                      data: {
+                        labels: labels,
+                        datasets: [
+                          {
+                            label: 'Last 100 games',
+                            borderColor: 'whitesmoke',
+                            data: data
+                          }
+                        ]
+                      }
+                    });
+                  }
+                });
+              }
+            </script>
+            <br />
+            <div>
+            <span><button class="tag is-light" onclick="LoadChart(100);">Last 100</button></span>
+            <span><button class="tag is-light" onclick="LoadChart(200);">Last 200</button></span>
+            <span><button class="tag is-light" onclick="LoadChart(300);">Last 300</button></span>
+            <span><button class="tag is-light" onclick="LoadChart(400);">Last 400</button></span>
+            <span><button class="tag is-light" onclick="LoadChart(500);">Last 500</button></span>
+            </div>
             <div id="chart" style="overflow:auto;"><canvas id="ratings" style="min-width:1000px;min-height:400px;"></canvas></div>
           </div>
 

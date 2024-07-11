@@ -106,7 +106,8 @@ pub async fn run(arc_in: DbWrite) {
                 api::weekly_games,
                 api::daily_character_games,
                 api::start_hide_player,
-                api::poll_hide_player
+                api::poll_hide_player,
+                api::player_rating_history
             ],
         )
         .register("/", catchers![catch_404, catch_500, catch_503])
@@ -424,7 +425,6 @@ async fn player_char(
             player: api::PlayerDataChar,
             all_characters: &'static [(&'static str, &'static str)],
             hidden_status: bool,
-            rating_history: Vec::<f64>, 
             current_time: String,
         }
 
@@ -435,15 +435,12 @@ async fn player_char(
                 hidden_status = true;
             }
 
-            let rating_history = api::get_player_rating_history(&conn, id, char_id_i64, 100).await.unwrap();
-
             let context = Context {
                 player_id: player_id.to_owned(),
                 char_id: char_id.to_owned(),
                 player,
                 all_characters: CHAR_NAMES,
                 hidden_status,
-                rating_history,
                 current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
             };
             Some(Cached::new(Template::render("player_char", &context), 999))

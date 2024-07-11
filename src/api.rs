@@ -2687,3 +2687,22 @@ pub async fn outcomes_delta(conn: RatingsDbConn) -> Json<(Vec<i64>, Vec<f64>, Ve
         .await,
     )
 }
+
+#[get("/api/rating_history/<player_id>/<char_id>?<game_count>")]
+pub async fn player_rating_history(
+    conn: RatingsDbConn,
+    player_id: &str,
+    char_id: &str,
+    game_count: Option<i64>,
+) -> Json<Vec<f64>> {
+    if let Ok(id) = i64::from_str_radix(player_id, 16) {
+        let char_id = website::CHAR_NAMES.iter().position(|(c, _)| *c == char_id).unwrap() as i64;
+        let game_count = game_count.unwrap_or(100);
+
+        let rating_history = get_player_rating_history(&conn, id, char_id, game_count).await.unwrap();
+        Json(rating_history)
+        
+    } else {
+        Json(Vec::new())
+    }
+}
