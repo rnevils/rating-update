@@ -44,9 +44,7 @@
             </div>
 			    </form>
       	</div>
-        <span class="navbar-item">
-          {{current_time}}
-        </span>
+        <span id="utc-date" class="navbar-item"></span>
         <a class="navbar-item" href="https://discord.gg/vY4mE8exXB" target="_blank">
           <span class="icon-text">
             <span class="icon">
@@ -66,3 +64,29 @@
     </div>
   </div>
 </nav>
+
+<script type="text/javascript">
+  function getCurrentUTCDateTime() {
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(now.getUTCDate()).padStart(2, '0');
+    const hours = String(now.getUTCHours()).padStart(2, '0');
+    const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes} UTC`;
+  }
+
+  function updateNavbarDateTime() {
+    const dateTimeElement = document.getElementById('utc-date');
+    if (dateTimeElement) {
+      dateTimeElement.textContent = getCurrentUTCDateTime();
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function (event) {
+    updateNavbarDateTime();
+    setInterval(updateNavbarDateTime, 10000);
+  });
+
+</script>
