@@ -260,11 +260,11 @@
     const localDate = localStorage.getItem("localDate") || false;
     if(!localDate) {
       localStorage.setItem("localDate", true);
-      load_history()
     } else {
       localStorage.removeItem("localDate");
-      load_history()
     }
+    load_history()
+    updateNavbarDateTime()
   }
 
   function LoadChart(game_count) {
