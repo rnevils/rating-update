@@ -5,3 +5,4 @@ ratings.sqlite
 output.log
 .vscode/
 .env
+.DS_Store
