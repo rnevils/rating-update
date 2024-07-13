@@ -24,6 +24,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+const formatUTCToLocal = () => {
+  const timestampElements = document.querySelectorAll('.timestamp');
+  timestampElements.forEach(element => {
+
+    const utcDateTimeString = element.textContent.trim();
+    const utcDate = new Date(utcDateTimeString + 'Z');
+
+    const localYear = utcDate.getFullYear();
+    const localMonth = String(utcDate.getMonth() + 1).padStart(2, '0');
+    const localDay = String(utcDate.getDate()).padStart(2, '0');
+    const localHours = String(utcDate.getHours()).padStart(2, '0');
+    const localMinutes = String(utcDate.getMinutes()).padStart(2, '0');
+
+    const localDateString = `${localYear}-${localMonth}-${localDay} ${localHours}:${localMinutes}`;
+
+    element.textContent = `${localDateString}`;
+  });
+}
 
 var page_index = 0;
 var char_id = "SO";
@@ -31,12 +49,17 @@ const load_history = () => {
 
     let req = new XMLHttpRequest();
     req.onreadystatechange = function() {
-        if (this.readyState = 4 && this.status == 200) {
+        if (this.readyState == 4 && this.status == 200) {
             console.log('got history');
 
             document.getElementById('history').innerHTML = this.responseText;
             document.getElementById("decrement_button").disabled = page_index == 0;
             document.getElementById("current_page").innerHTML = "Games " + (page_index * 100 + 1) + "–" + (page_index * 100 + 100)
+            
+            const localDate = localStorage.getItem("localDate") || false;
+            if (localDate) {
+              formatUTCToLocal()
+            }
         }
     };
     console.log('requesting history');

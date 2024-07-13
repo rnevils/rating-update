@@ -166,7 +166,16 @@
         </div>
       </div>
       <div class="column is-one-quarter-fullhd">
-        <input id="id_toggleRefresh" onclick="toggleRefresh();" type="checkbox"> <span>Check this box to refresh automatically.</span>
+        <div>
+          <label class="checkbox">
+            <input id="id_toggleRefresh" onclick="toggleRefresh();" type="checkbox"> Check this box to refresh automatically.
+          </label>
+        </div>
+        <div>
+          <label class="checkbox">
+            <input id="id_toggleLocalDate" onclick="toggleLocalDate();" type="checkbox"> Check this box to use local time.
+          </label>
+        </div>
         <hr>
         <aside class="menu">
           <p class="menu-label">
@@ -223,7 +232,7 @@
   document.addEventListener("DOMContentLoaded", function (event) {
     LoadChart(100);
 
-    let autoRefresh = localStorage.getItem("autoRefresh") || false;
+    const autoRefresh = localStorage.getItem("autoRefresh") || false;
     if( autoRefresh ) {
       document.getElementById("id_toggleRefresh").checked = true;
       timeout = setTimeout(function() {
@@ -231,11 +240,14 @@
       }, 70000);
     }
 
+    const localDate = localStorage.getItem("localDate") || false;
+    if( localDate ) {
+      document.getElementById("id_toggleLocalDate").checked = true;
+    }
   });
 
   function toggleRefresh() {
-    let autoRefresh = localStorage.getItem("autoRefresh") || false;
-
+    const autoRefresh = localStorage.getItem("autoRefresh") || false;
     if(!autoRefresh) {
       localStorage.setItem("autoRefresh", true);
       timeout = setTimeout(function() {
@@ -246,6 +258,17 @@
       localStorage.removeItem("autoRefresh");
       clearTimeout(timeout);
     }
+  }
+
+  function toggleLocalDate() {
+    const localDate = localStorage.getItem("localDate") || false;
+    if(!localDate) {
+      localStorage.setItem("localDate", true);
+    } else {
+      localStorage.removeItem("localDate");
+    }
+    load_history()
+    updateNavbarDateTime()
   }
 
   function LoadChart(game_count) {

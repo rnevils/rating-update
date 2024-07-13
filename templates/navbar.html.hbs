@@ -44,9 +44,7 @@
             </div>
 			    </form>
       	</div>
-        <span class="navbar-item">
-          {{current_time}}
-        </span>
+        <span id="utc-date" class="navbar-item"></span>
         <a class="navbar-item" href="https://discord.gg/vY4mE8exXB" target="_blank">
           <span class="icon-text">
             <span class="icon">
@@ -66,3 +64,42 @@
     </div>
   </div>
 </nav>
+
+<script type="text/javascript">
+  function getCurrentDateTime(useLocal) {
+    const now = new Date();
+    let year, month, day, hours, minutes, seconds, tzSuffix;
+
+    if (useLocal) {
+      year = now.getFullYear();
+      month = String(now.getMonth() + 1).padStart(2, '0');
+      day = String(now.getDate()).padStart(2, '0');
+      hours = String(now.getHours()).padStart(2, '0');
+      minutes = String(now.getMinutes()).padStart(2, '0');
+      tzSuffix = 'Local';
+    } else {
+      year = now.getUTCFullYear();
+      month = String(now.getUTCMonth() + 1).padStart(2, '0');
+      day = String(now.getUTCDate()).padStart(2, '0');
+      hours = String(now.getUTCHours()).padStart(2, '0');
+      minutes = String(now.getUTCMinutes()).padStart(2, '0');
+      tzSuffix = 'UTC';
+    }
+    
+    return `${year}-${month}-${day} ${hours}:${minutes} ${tzSuffix}`;
+  }
+
+  function updateNavbarDateTime() {
+    const dateTimeElement = document.getElementById('utc-date');
+    if (dateTimeElement) {
+      const localDate = localStorage.getItem("localDate") === 'true';
+      dateTimeElement.textContent = getCurrentDateTime(localDate);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function (event) {
+    updateNavbarDateTime();
+    setInterval(updateNavbarDateTime, 10000);
+  });
+
+</script>
