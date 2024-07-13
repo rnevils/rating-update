@@ -129,11 +129,9 @@ async fn about(conn: RatingsDbConn) -> Cached<Template> {
     #[derive(Serialize)]
     struct Context {
         all_characters: &'static [(&'static str, &'static str)],
-        current_time: String,
     }
     let context = Context {
         all_characters: CHAR_NAMES,
-        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("about", &context), 999)
@@ -144,11 +142,9 @@ async fn rating_calculator(conn: RatingsDbConn) -> Cached<Template> {
     #[derive(Serialize)]
     struct Context {
         all_characters: &'static [(&'static str, &'static str)],
-        current_time: String,
     }
     let context = Context {
         all_characters: CHAR_NAMES,
-        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("rating_calculator", &context), 999)
@@ -160,12 +156,10 @@ async fn stats(conn: RatingsDbConn) -> Cached<Template> {
     struct Context {
         stats: api::Stats,
         all_characters: &'static [(&'static str, &'static str)],
-        current_time: String,
     }
     let context = Context {
         stats: api::stats_inner(&conn).await,
         all_characters: CHAR_NAMES,
-        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("stats", &context), 999)
@@ -177,7 +171,6 @@ async fn supporters(conn: RatingsDbConn) -> Cached<Template> {
     struct Context {
         players: Vec<api::VipPlayer>,
         all_characters: &'static [(&'static str, &'static str)],
-        current_time: String,
         
     }
 
@@ -187,7 +180,6 @@ async fn supporters(conn: RatingsDbConn) -> Cached<Template> {
             &Context {
                 players: api::get_supporters(&conn).await,
                 all_characters: CHAR_NAMES,
-                current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
             },
         ),
         999,
@@ -200,14 +192,12 @@ async fn top_all(conn: RatingsDbConn) -> Cached<Template> {
     struct Context {
         players: Vec<api::RankingPlayer>,
         all_characters: &'static [(&'static str, &'static str)],
-        current_time: String,
     }
 
     let players = api::top_all_inner(&conn).await;
     let context = Context {
         players,
         all_characters: CHAR_NAMES,
-        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("top_100", &context), 999)
@@ -221,7 +211,6 @@ async fn top_char(conn: RatingsDbConn, character_short: &str) -> Option<Cached<T
         character: &'static str,
         character_short: &'static str,
         all_characters: &'static [(&'static str, &'static str)],
-        current_time: String,
     }
 
     if let Some(char_code) = CHAR_NAMES.iter().position(|(c, _)| *c == character_short) {
@@ -233,7 +222,6 @@ async fn top_char(conn: RatingsDbConn, character_short: &str) -> Option<Cached<T
             character,
             character_short,
             all_characters: CHAR_NAMES,
-            current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
         };
 
         Some(Cached::new(Template::render("top_100_char", &context), 999))
@@ -252,7 +240,6 @@ async fn matchups(conn: RatingsDbConn) -> Cached<Template> {
         matchups_proportional: Vec<api::CharacterMatchups>,
         matchups_top_100: Vec<api::CharacterMatchups>,
         all_characters: &'static [(&'static str, &'static str)],
-        current_time: String,
     }
 
     let (matchups_global, matchups_top_1000, matchups_proportional, matchups_top_100) = tokio::join!(
@@ -269,7 +256,6 @@ async fn matchups(conn: RatingsDbConn) -> Cached<Template> {
         matchups_proportional,
         matchups_top_100,
         all_characters: CHAR_NAMES,
-        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("matchups", &context), 999)
@@ -286,7 +272,6 @@ async fn character_popularity(conn: RatingsDbConn) -> Cached<Template> {
         fraud_stats_higher_rated: Vec<api::FraudStats>,
         fraud_stats_highest_rated: Vec<api::FraudStats>,
         all_characters: &'static [(&'static str, &'static str)],
-        current_time: String,
     }
 
     let (
@@ -328,7 +313,6 @@ async fn character_popularity(conn: RatingsDbConn) -> Cached<Template> {
         fraud_stats_higher_rated,
         fraud_stats_highest_rated,
         all_characters: CHAR_NAMES,
-        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("character_popularity", &context), 999)
@@ -346,7 +330,6 @@ async fn player_distribution(conn: RatingsDbConn) -> Cached<Template> {
         floors: Vec<api::FloorPlayers>,
         ratings: Vec<api::RatingPlayers>,
         all_characters: &'static [(&'static str, &'static str)],
-        current_time: String,
     }
 
     let (floors, ratings) = tokio::join!(
@@ -357,7 +340,6 @@ async fn player_distribution(conn: RatingsDbConn) -> Cached<Template> {
         floors,
         ratings,
         all_characters: CHAR_NAMES,
-        current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
     };
 
     Cached::new(Template::render("player_distribution", &context), 999)
@@ -425,7 +407,6 @@ async fn player_char(
             player: api::PlayerDataChar,
             all_characters: &'static [(&'static str, &'static str)],
             hidden_status: bool,
-            current_time: String,
         }
 
         if let Ok(Some(player)) = api::get_player_data_char(&conn, id, char_id_i64).await {
@@ -441,7 +422,6 @@ async fn player_char(
                 player,
                 all_characters: CHAR_NAMES,
                 hidden_status,
-                current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
             };
             Some(Cached::new(Template::render("player_char", &context), 999))
         } else {
@@ -459,7 +439,6 @@ async fn search(conn: RatingsDbConn, name: String) -> Template {
         search_string: String,
         players: Vec<api::SearchResultPlayer>,
         all_characters: &'static [(&'static str, &'static str)],
-        current_time: String,
     }
 
     let players = api::search_inner(&conn, name.clone(), false).await;
@@ -470,7 +449,6 @@ async fn search(conn: RatingsDbConn, name: String) -> Template {
             players,
             search_string: name,
             all_characters: CHAR_NAMES,
-            current_time: Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string(),
         },
     )
 }
