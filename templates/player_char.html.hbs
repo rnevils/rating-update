@@ -267,28 +267,43 @@
     } else {
       localStorage.removeItem("localDate");
     }
-    load_history()
-    updateNavbarDateTime()
+    load_history();
+    updateNavbarDateTime();
+    LoadChart(100);
   }
 
   function LoadChart(game_count) {
     fetch("/api/rating_history/{{player_id}}/{{char_id}}?game_count="+game_count).then(function(response) {
       return response.json();
-    }).then(function(data) {
-      data.reverse();
-      data.push({{ player.data.rating_value }});
+    }).then(function(rawData) {
+      rawData.reverse();
       
       const ctx = document.getElementById('ratings');
 
-      var labels = [];
-      for (var i = 0; i < data.length; i++) {
-        labels.push("");
+      var dates = [];
+      for (var i = 0; i < rawData.length; i++) {
+        let date = rawData[i][1];
+
+        const doLocalDateFormat = localStorage.getItem("localDate") || false;
+        if (doLocalDateFormat) {
+          date = doLocalFormat(date);
+        }
+
+        dates.push(date);
       }
 
+      var ratings = [];
+      for (var i = 0; i < rawData.length; i++) {
+        ratings.push(rawData[i][0]);
+      }
+
+      dates.push("Current");
+      ratings.push({{ player.data.rating_value }});
+
       if( chart ) {
-        chart.data.labels=labels;
+        chart.data.labels=dates;
         chart.data.datasets[0].label='Last ' + game_count + ' games';
-        chart.data.datasets[0].data=data;
+        chart.data.datasets[0].data=ratings;
         chart.update();
       } else {
         chart = new Chart(ctx, {
@@ -298,12 +313,12 @@
             responsive: false,
           },
           data: {
-            labels: labels,
+            labels: dates,
             datasets: [
               {
                 label: 'Last 100 games',
                 borderColor: 'whitesmoke',
-                data: data
+                data: ratings
               }
             ]
           }

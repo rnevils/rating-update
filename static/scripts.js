@@ -24,22 +24,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+function doLocalFormat(utcDateIn) {
+  const utcDateTimeString = utcDateIn.trim();
+  const utcDate = new Date(utcDateTimeString + 'Z');
+
+  const localYear = utcDate.getFullYear();
+  const localMonth = String(utcDate.getMonth() + 1).padStart(2, '0');
+  const localDay = String(utcDate.getDate()).padStart(2, '0');
+  const localHours = String(utcDate.getHours()).padStart(2, '0');
+  const localMinutes = String(utcDate.getMinutes()).padStart(2, '0');
+
+  return `${localYear}-${localMonth}-${localDay} ${localHours}:${localMinutes}`;
+}
+
 const formatUTCToLocal = () => {
   const timestampElements = document.querySelectorAll('.timestamp');
   timestampElements.forEach(element => {
-
-    const utcDateTimeString = element.textContent.trim();
-    const utcDate = new Date(utcDateTimeString + 'Z');
-
-    const localYear = utcDate.getFullYear();
-    const localMonth = String(utcDate.getMonth() + 1).padStart(2, '0');
-    const localDay = String(utcDate.getDate()).padStart(2, '0');
-    const localHours = String(utcDate.getHours()).padStart(2, '0');
-    const localMinutes = String(utcDate.getMinutes()).padStart(2, '0');
-
-    const localDateString = `${localYear}-${localMonth}-${localDay} ${localHours}:${localMinutes}`;
-
-    element.textContent = `${localDateString}`;
+    element.textContent = doLocalFormat(element.textContent);
   });
 }
 

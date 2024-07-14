@@ -2647,16 +2647,24 @@ pub async fn player_rating_history(
     player_id: &str,
     char_id: &str,
     game_count: Option<i64>,
-) -> Json<Vec<(f64,i64)>> {
+) -> Json<Vec<(f64,String)>> {
     if let Ok(id) = i64::from_str_radix(player_id, 16) {
         let char_id = website::CHAR_NAMES.iter().position(|(c, _)| *c == char_id).unwrap() as i64;
         let game_count = game_count.unwrap_or(100);
 
         let rating_history = get_player_rating_history(&conn, id, char_id, game_count).await.unwrap();
         
+        let ret: Vec<(f64, String)> = rating_history
+            .into_iter()
+            .map(|x| (
+                x.0,
+                DateTime::from_timestamp(x.1, 0)
+                    .unwrap()
+                    .format("%Y-%m-%d %H:%M")
+                    .to_string()
+            )).collect();
 
-        Json(rating_history)
-        
+            Json(ret)
     } else {
         Json(Vec::new())
     }
