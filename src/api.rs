@@ -1,5 +1,5 @@
 use crate::ggst_api;
-use chrono::{Duration, NaiveDateTime, Utc};
+use chrono::{Duration, DateTime, Utc};
 use fxhash::FxHashMap;
 use rand::distributions::{Alphanumeric, DistString};
 use rocket::serde::{json::Json, Serialize};
@@ -171,8 +171,8 @@ pub async fn daily_games(
     Json(
         conn.run(move |conn| {
             let tx = conn.transaction().unwrap();
-            let now = NaiveDateTime::from_timestamp_opt(Utc::now().timestamp(), 0).unwrap();
-            let now_date = now.date();
+            let now = DateTime::from_timestamp(Utc::now().timestamp(), 0).unwrap();
+            let now_date = now.date_naive();
             let length = length.unwrap_or(60);
             let then = now_date - Duration::days(length);
 
@@ -184,7 +184,7 @@ pub async fn daily_games(
                 then.iter_days()
                     .take(length as usize)
                     .map(|date| {
-                        let from = date.and_hms_opt(0, 0, 0).unwrap().timestamp();
+                        let from = date.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp();
                         let to = from + 24 * 60 * 60;
                         tx.query_row(
                             "select count(*) from games where timestamp > ? and timestamp < ?",
@@ -197,7 +197,7 @@ pub async fn daily_games(
                 then.iter_days()
                     .take(length as usize)
                     .map(|date| {
-                        let from = date.and_hms_opt(0, 0, 0).unwrap().timestamp();
+                        let from = date.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp();
                         let to = from + 24 * 60 * 60;
                         tx.query_row(
                             "select count(distinct id) from (
@@ -226,8 +226,8 @@ pub async fn weekly_games(
     Json(
         conn.run(move |conn| {
             let tx = conn.transaction().unwrap();
-            let now = NaiveDateTime::from_timestamp_opt(Utc::now().timestamp(), 0).unwrap();
-            let now_date = now.date();
+            let now = DateTime::from_timestamp(Utc::now().timestamp(), 0).unwrap();
+            let now_date = now.date_naive();
             let length = length.unwrap_or(8);
             let then = now_date - Duration::weeks(length);
 
@@ -239,7 +239,7 @@ pub async fn weekly_games(
                 then.iter_days()
                     .take(length as usize)
                     .map(|date| {
-                        let from = date.and_hms_opt(0, 0, 0).unwrap().timestamp();
+                        let from = date.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp();
                         let to = from + 7 * 24 * 60 * 60;
                         tx.query_row(
                             "select count(*) from games where timestamp > ? and timestamp < ?",
@@ -252,7 +252,7 @@ pub async fn weekly_games(
                 then.iter_days()
                     .take(length as usize)
                     .map(|date| {
-                        let from = date.and_hms_opt(0, 0, 0).unwrap().timestamp();
+                        let from = date.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp();
                         let to = from + 7 * 24 * 60 * 60;
                         tx.query_row(
                             "select count(distinct id) from (
@@ -265,51 +265,6 @@ pub async fn weekly_games(
                             |r| r.get(0),
                         )
                         .unwrap()
-                    })
-                    .collect(),
-            )
-        })
-        .await,
-    )
-}
-
-#[get("/api/daily_character_games?<length>")]
-pub async fn daily_character_games(
-    conn: RatingsDbConn,
-    length: Option<i64>,
-) -> Json<(Vec<String>, Vec<String>, Vec<Vec<i64>>)> {
-    Json(
-        conn.run(move |conn| {
-            let tx = conn.transaction().unwrap();
-            let now = NaiveDateTime::from_timestamp_opt(Utc::now().timestamp(), 0).unwrap();
-            let now_date = now.date();
-            let length = length.unwrap_or(60);
-            let then = now_date - Duration::days(length);
-
-            (
-                then.iter_days()
-                    .take(length as usize)
-                    .map(|date| date.format("%Y-%m-%d").to_string())
-                    .collect(),
-                website::CHAR_NAMES.iter().map(|c| c.0.to_owned()).collect(),
-                (0..website::CHAR_NAMES.len())
-                    .map(|c| {
-                        then.iter_days()
-                            .take(length as usize)
-                            .map(|date| {
-                                let from = date.and_hms_opt(0, 0, 0).unwrap().timestamp();
-                                let to = from + 24 * 60 * 60;
-                                tx.query_row(
-                                    "SELECT COUNT(*) 
-                                    FROM games 
-                                    WHERE timestamp > ? ANd timestamp < ? AND 
-                                    (char_a = ? OR char_b = ?)",
-                                    params![from, to, c, c],
-                                    |r| r.get::<_, i64>(0),
-                                )
-                                .unwrap()
-                            })
-                            .collect()
                     })
                     .collect(),
             )
@@ -378,8 +333,8 @@ pub async fn player_rating_all(conn: RatingsDbConn, player: &str) -> Json<Vec<Ra
             let mut stmt = conn
                 .prepare(
                     "SELECT char_id, value, deviation 
-        FROM player_ratings
-        WHERE id = ?",
+                    FROM player_ratings
+                    WHERE id = ?",
                 )
                 .unwrap();
 
@@ -986,9 +941,9 @@ pub async fn get_player_rating_history(
     id: i64,
     char_id: i64,
     game_count: i64,
-) -> Option<Vec::<f64>> {
+) -> Option<Vec::<(f64,i64)>> {
     if let Ok(res) = conn.run(move |conn| {
-        let history: Vec<f64> = {
+        let history: Vec<(f64,i64)> = {
             let mut stmt = conn
                 .prepare_cached(
                     "SELECT
@@ -1026,13 +981,11 @@ pub async fn get_player_rating_history(
                     ":game_count":game_count,
                 })
                 .unwrap();
-            let mut history = Vec::<f64>::new();
+            let mut history = Vec::<(f64,i64)>::new();
             while let Some(row) = rows.next().unwrap() {
                 let own_value: f64 = row.get("own_value").unwrap();
-                //let opponent_cheater: Option<String> = row.get("cheater_status").unwrap();
-                //let opponent_hidden: Option<String> = row.get("hidden_status").unwrap();
-
-                history.push(own_value);
+                let timestamp: i64 = row.get("timestamp").unwrap();
+                history.push((own_value,timestamp));
             }
             history
         };
@@ -1439,7 +1392,7 @@ fn get_player_character_data(
             top_rating_value: top_rating_value.map(|r| r.round() as i64),
             top_rating_deviation: top_rating_deviation.map(|d| (2.0 * d).round() as i64),
             top_rating_timestamp: top_rating_timestamp.map(|t| {
-                NaiveDateTime::from_timestamp_opt(t, 0)
+                DateTime::from_timestamp(t, 0)
                     .unwrap()
                     .format("%Y-%m-%d")
                     .to_string()
@@ -1451,7 +1404,7 @@ fn get_player_character_data(
             top_defeated_deviation: top_defeated_deviation.map(|r| (2.0 * r).round() as i64),
             top_defeated_floor: top_defeated_floor.map(stringify_floor),
             top_defeated_timestamp: top_defeated_timestamp.map(|t| {
-                NaiveDateTime::from_timestamp_opt(t, 0)
+                DateTime::from_timestamp(t, 0)
                     .unwrap()
                     .format("%Y-%m-%d")
                     .to_string()
@@ -1486,7 +1439,7 @@ struct RawPlayerSet {
 
 impl RawPlayerSet {
     fn to_formatted_set(self) -> PlayerSet {
-        let timestamp = NaiveDateTime::from_timestamp_opt(self.timestamp, 0)
+        let timestamp = DateTime::from_timestamp(self.timestamp, 0)
             .unwrap()
             .format("%Y-%m-%d %H:%M")
             .to_string();
@@ -2694,12 +2647,14 @@ pub async fn player_rating_history(
     player_id: &str,
     char_id: &str,
     game_count: Option<i64>,
-) -> Json<Vec<f64>> {
+) -> Json<Vec<(f64,i64)>> {
     if let Ok(id) = i64::from_str_radix(player_id, 16) {
         let char_id = website::CHAR_NAMES.iter().position(|(c, _)| *c == char_id).unwrap() as i64;
         let game_count = game_count.unwrap_or(100);
 
         let rating_history = get_player_rating_history(&conn, id, char_id, game_count).await.unwrap();
+        
+
         Json(rating_history)
         
     } else {

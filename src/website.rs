@@ -11,7 +11,6 @@ use rocket_sync_db_pools::database;
 use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 use async_std::sync::{Arc, Mutex};
-use chrono::Utc;
 
 pub const CHAR_NAMES: &[(&str, &str)] = &[
     ("SO", "Sol"),
@@ -104,7 +103,6 @@ pub async fn run(arc_in: DbWrite) {
                 api::active_players,
                 api::daily_games,
                 api::weekly_games,
-                api::daily_character_games,
                 api::start_hide_player,
                 api::poll_hide_player,
                 api::player_rating_history
@@ -125,7 +123,7 @@ async fn index() -> Redirect {
 }
 
 #[get("/about")]
-async fn about(conn: RatingsDbConn) -> Cached<Template> {
+async fn about() -> Cached<Template> {
     #[derive(Serialize)]
     struct Context {
         all_characters: &'static [(&'static str, &'static str)],
@@ -138,7 +136,7 @@ async fn about(conn: RatingsDbConn) -> Cached<Template> {
 }
 
 #[get("/rating_calculator")]
-async fn rating_calculator(conn: RatingsDbConn) -> Cached<Template> {
+async fn rating_calculator() -> Cached<Template> {
     #[derive(Serialize)]
     struct Context {
         all_characters: &'static [(&'static str, &'static str)],

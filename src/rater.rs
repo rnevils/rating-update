@@ -1,5 +1,5 @@
 use crate::{ggst_api, glicko, glicko::Rating, responses, website};
-use chrono::{NaiveDateTime, Utc};
+use chrono::{Utc,DateTime,NaiveDateTime};
 use fxhash::{FxHashMap, FxHashSet};
 use lazy_static::lazy_static;
 use rusqlite::{
@@ -163,7 +163,7 @@ pub async fn update_statistics(
 
     info!(
         "Last ranking period: {}",
-        NaiveDateTime::from_timestamp_opt(*last_ranking_update, 0).unwrap()
+        DateTime::from_timestamp(*last_ranking_update, 0).unwrap()
     );
 
     conn.execute(
@@ -470,7 +470,7 @@ fn add_game(conn: &Transaction, game: responses::Replay) -> Option<Game> {
             game_floor
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             params![
-                timestamp.timestamp(),
+                timestamp.and_utc().timestamp(),
                 player1.id,
                 player1.name,
                 player1_character,
@@ -487,7 +487,7 @@ fn add_game(conn: &Transaction, game: responses::Replay) -> Option<Game> {
 
     if count == 1 {
         Some(Game {
-            timestamp: timestamp.timestamp(),
+            timestamp: timestamp.and_utc().timestamp(),
             id_a: player1.id.parse().unwrap(),
             char_a: player1_character,
             platform_a: player1.platform,
@@ -1104,11 +1104,12 @@ fn update_ratings(conn: &mut Connection, games: Option<Vec<Game>>) -> i64 {
 
             //Update daily ratings
             {
-                let day_timestamp = NaiveDateTime::from_timestamp_opt(g.timestamp, 0)
+                let day_timestamp = DateTime::from_timestamp(g.timestamp, 0)
                     .unwrap()
-                    .date()
+                    .date_naive()
                     .and_hms_opt(0, 0, 0)
                     .unwrap()
+                    .and_utc()
                     .timestamp();
 
                 let winner_new_rating = players.get(&winner).unwrap().rating;

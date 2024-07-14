@@ -18,12 +18,14 @@ pub struct ResponseHeader {
     _string2: String,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub struct Login {
     _int1: i64,
     pub data: InnerLogin,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub struct InnerLogin {
     _string1: String,
