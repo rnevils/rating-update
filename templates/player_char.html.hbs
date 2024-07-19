@@ -136,21 +136,25 @@
           {{#if player.data.matchups}}
           <h2>Matchups</h2>
           <div class="table-container">
-            <table>
+            <table  class="sortable">
+              <thead>
               <tr>
-                <th>Matchup</th>
-                <th>Games</th>
-                <th>Win rate</th>
-                <th>Rating offset</th>
+                <th style="cursor: pointer;">Matchup<i class="fas fa-sort"></i></th>
+                <th style="cursor: pointer;">Games<i class="fas fa-sort"></i></th>
+                <th style="cursor: pointer;">Win rate<i class="fas fa-sort"></i></th>
+                <th style="cursor: pointer;">Rating offset<i class="fas fa-sort"></i></th>
               </tr>
+              </thead>
+              <tbody>
               {{#each player.data.matchups}}
               <tr>
                 <td>{{this.character}}</td>
                 <td class="centered">{{this.game_count}}</td>
                 <td class="centered">{{this.win_rate}}%</td>
-                  <td title="{{this.rating}} ±{{this.rating_deviation}}" class="{{this.rating_change_class}} centered">{{this.rating_offset}}</td>
+                  <td data-sort="{{this.rating}}" title="{{this.rating}} ±{{this.rating_deviation}}" class="{{this.rating_change_class}} centered">{{this.rating_offset}}</td>
               </tr>
               {{/each}}
+              </tbody>
               <tr>
                 <td><b>Overall</b></td>
                 <td class="centered"><b>{{player.data.game_count}}</b></td>
@@ -159,6 +163,7 @@
               </tr>
             </table>
           </div>
+          <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@latest/sortable.min.js"></script>
           {{/if}}
           <div>
             <button class="tag is-danger is-medium" onclick="toggle_profile('{{player.id}}');">Hide my profile</button>
