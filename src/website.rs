@@ -468,8 +468,9 @@ async fn player_page_auth(uuid: String) -> Option<Template> {
 async fn player_page() -> Option<Template> {
     #[derive(Serialize)]
     struct Context {
+        all_characters: &'static [(&'static str, &'static str)],
     }
-    Some(Template::render("player_page", &Context { }))
+    Some(Template::render("player_page", &Context { all_characters: CHAR_NAMES }))
 }
 
 #[get("/recent")]
