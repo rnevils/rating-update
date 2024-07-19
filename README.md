@@ -1,6 +1,8 @@
 # rating-update
 Ratings for Guilty Gear: Strive
 
+This version is currently being hosted on [puddle.farm](https://puddle.farm).
+
 ## How does this work?
 
 Replays are pulled from Strive's servers, they are then processed using a modified Glicko algorithm, which you can read more about [here](docs/modified-glicko.md).
