@@ -166,7 +166,8 @@
           <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@latest/sortable.min.js"></script>
           {{/if}}
           <div>
-            <button class="tag is-danger is-medium" onclick="toggle_profile('{{player.id}}');">Hide my profile</button>
+            <button class="tag is-danger is-medium" onclick="toggle_profile('{{player.id}}');">Claim my profile</button>
+            <br/><span>Use this to hide your profile.</span>
           </div>
         </div>
       </div>
@@ -353,11 +354,12 @@
 
 
   function toggle_profile(player_id) {
+    clearTimeout(timeout);
     var modal = document.getElementById("modal");
     modal.style.display = "block";
 
     const req = new XMLHttpRequest();
-    req.open("GET", `/api/hide/${player_id}`);
+    req.open("GET", `/api/claim/${player_id}`);
     req.send();
 
     req.onreadystatechange = (e) => {
@@ -379,22 +381,27 @@
       var modal = document.getElementById("modal");
       modal.style.display = "none";
 
-      alert("You have idled for too long. Please retry the hide feature");
+      alert("You have idled for too long. Please retry the claim feature");
     }
     const req = new XMLHttpRequest();
-    req.open("GET", `/api/hide/poll/${player_id}`);
+    req.open("GET", `/api/claim/poll/${player_id}`);
     req.send();
 
     req.onreadystatechange = (e) => {
-      if (req.readyState == 4 && req.status == 200 && req.response != 'false') {
-        clearInterval(timer);
-        let loader = document.getElementById("loader");
-        loader.className = "";
-        loader.textContent = "✅";  
-        setTimeout(() => {
-          location.reload();
-        }, 5000);
-
+      
+      if (req.readyState == 4 && req.status == 200) {
+        const resp = JSON.parse(req.response);
+        
+        if(resp['uuid'] != 'false') {
+          clearInterval(timer);
+          
+          let loader = document.getElementById("loader");
+          loader.className = "";
+          loader.textContent = "✅";  
+          setTimeout(() => {
+            document.location='/player_page_auth/' + resp['uuid'];
+          }, 2000);
+        }
       }
     }
 

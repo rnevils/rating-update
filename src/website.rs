@@ -85,6 +85,8 @@ pub async fn run(arc_in: DbWrite) {
                 stats,
                 supporters,
                 rating_calculator,
+                player_page,
+                player_page_auth,
                 recent,
                 api::stats,
                 api::player_rating,
@@ -103,9 +105,11 @@ pub async fn run(arc_in: DbWrite) {
                 api::active_players,
                 api::daily_games,
                 api::weekly_games,
-                api::start_hide_player,
-                api::poll_hide_player,
-                api::player_rating_history
+                api::start_claim_player,
+                api::poll_claim_player,
+                api::player_rating_history,
+                api::hide_player,
+                api::get_player_page_data,
             ],
         )
         .register("/", catchers![catch_404, catch_500, catch_503])
@@ -449,6 +453,23 @@ async fn search(conn: RatingsDbConn, name: String) -> Template {
             all_characters: CHAR_NAMES,
         },
     )
+}
+
+#[get("/player_page_auth/<uuid>")]
+async fn player_page_auth(uuid: String) -> Option<Template> {
+    #[derive(Serialize)]
+    struct Context {
+        uuid: String,
+    }
+    Some(Template::render("player_page_auth", &Context { uuid }))
+}
+
+#[get("/player_page")]
+async fn player_page() -> Option<Template> {
+    #[derive(Serialize)]
+    struct Context {
+    }
+    Some(Template::render("player_page", &Context { }))
 }
 
 #[get("/recent")]

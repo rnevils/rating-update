@@ -7,6 +7,7 @@ use rusqlite::{named_params, params, Connection, OptionalExtension};
 
 use rocket::State;
 use website::DbWrite;
+use uuid::Uuid;
 
 use crate::{
     glicko,
@@ -783,6 +784,13 @@ pub struct PlayerDataChar {
     other_characters: Vec<OtherPlayerCharacter>,
     data: PlayerCharacterData,
     pub hidden_status: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct PlayerPage {
+    id: i64,
+    player_name: String,
+    hidden_status: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -2217,6 +2225,39 @@ pub async fn rating_experience_player(
     )
 }
 
+#[get("/api/player_page_data/<uuid>")]
+pub async fn get_player_page_data(conn: RatingsDbConn, uuid: String) -> Json<PlayerPage> {
+    conn.run(move |conn| {
+        if conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM player_page WHERE uuid=?)",
+            params![uuid],
+            |r| r.get(0),
+        ).unwrap() {
+            let (id, player_name, hidden_status): (
+                i64,
+                String,
+                Option<String>,
+            ) = conn.query_row(
+                "SELECT players.id, players.name, hidden_status.hidden_status FROM players
+                        LEFT JOIN player_page ON players.id = player_page.id
+                        LEFT JOIN hidden_status ON hidden_status.id = players.id
+                        WHERE player_page.uuid = :1",
+                params![uuid],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            ).unwrap();
+            
+            Json(PlayerPage {
+                id,
+                player_name,
+                hidden_status,
+            })
+        } else {
+            Json(PlayerPage { id: 0, player_name: "".to_string(), hidden_status: Some("".to_string()) })
+        }
+    })
+    .await
+}
+
 #[get("/api/rating_experience?<min_rating>&<max_rating>")]
 pub async fn rating_experience(
     conn: RatingsDbConn,
@@ -2472,8 +2513,8 @@ pub async fn outcomes(conn: RatingsDbConn) -> Json<(Vec<i64>, Vec<f64>, Vec<f64>
     )
 }
 
-#[get("/api/hide/<player>")]
-pub async fn start_hide_player(conn: RatingsDbConn, player: &str, lock: &State<DbWrite>) -> Json<String> {
+#[get("/api/claim/<player>")]
+pub async fn start_claim_player(conn: RatingsDbConn, player: &str, lock: &State<DbWrite>) -> Json<String> {
     let id = i64::from_str_radix(&player, 16).unwrap();
     let player_code = Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
     let db_write = lock.arc.lock().await;
@@ -2484,7 +2525,7 @@ pub async fn start_hide_player(conn: RatingsDbConn, player: &str, lock: &State<D
 
             let exists: i64 = tx
                 .query_row(
-                    "SELECT count(id) FROM hidden_status WHERE id=? and hidden_status is not null",
+                    "SELECT count(id) FROM player_page WHERE id=?",
                     params![&id],
                     |r| r.get(0),
                 )
@@ -2492,14 +2533,13 @@ pub async fn start_hide_player(conn: RatingsDbConn, player: &str, lock: &State<D
 
             if exists > 0 {
                 tx.execute(
-                    "UPDATE hidden_status SET code=? WHERE id=?",
+                    "UPDATE player_page SET code=? WHERE id=?",
                     params![&player_code, &id],
                 )
                 .unwrap();
             } else {
                 tx.execute(
-                    "INSERT or replace INTO hidden_status(id, hidden_status, code, notes)
-                VALUES(?, NULL, ?, 'PlayerAutomated')",
+                    "INSERT INTO player_page(id, code) VALUES(?, ?)",
                     params![&id, &player_code],
                 )
                 .unwrap();
@@ -2513,14 +2553,19 @@ pub async fn start_hide_player(conn: RatingsDbConn, player: &str, lock: &State<D
     Json(code)
 }
 
-#[get("/api/hide/poll/<player>")]
-pub async fn poll_hide_player(conn: RatingsDbConn, player: &str, lock: &State<DbWrite>) -> Json<bool> {
+#[derive(Serialize)]
+pub struct PollResponse {
+    uuid: String,
+}
+
+#[get("/api/claim/poll/<player>")]
+pub async fn poll_claim_player(conn: RatingsDbConn, player: &str, lock: &State<DbWrite>) -> Json<PollResponse> {
     info!("Starting poll hide player");
     if let Ok(id) = i64::from_str_radix(&player, 16) {
         let code: String = conn
             .run(move |conn| {
                 conn.query_row(
-                    "SELECT code FROM hidden_status WHERE id=?",
+                    "SELECT code FROM player_page WHERE id=?",
                     params![&id],
                     |r| r.get(0),
                 )
@@ -2531,7 +2576,7 @@ pub async fn poll_hide_player(conn: RatingsDbConn, player: &str, lock: &State<Db
 
         if code.is_empty() {
             info!("No code, returning false");
-            Json(false)
+            Json(PollResponse { uuid: "false".to_string() })
         } else {
             info!("Getting player stats");
             let json = ggst_api::get_player_stats(id.to_string()).await;
@@ -2546,39 +2591,61 @@ pub async fn poll_hide_player(conn: RatingsDbConn, player: &str, lock: &State<Db
             };
 
             if found {
-                info!("Found code, setting hidden status");
+                info!("Found code, creating player_page details");
                 let db_write = lock.arc.lock().await;
-                conn.run(move |conn| {
-                    let exists: i64 = conn.query_row(
-                        "SELECT count(id) FROM hidden_status WHERE id=? and hidden_status is not null",
+
+
+                let uuid = conn.run(move |conn| {
+                    let tx = conn.transaction().unwrap();
+
+                    let exists: i64 = tx.query_row(
+                        "SELECT count(id) FROM player_page WHERE id=? AND uuid IS NOT NULL",
                         params![&id],
                         |r| r.get(0)
                     ).unwrap();
 
-                    info!("Does code exist? {exists}");
+                    info!("Does uuid exist? {exists}");
 
                     if exists > 0 {
-                        info!("Setting hidden status to null");
-                        conn.execute(
-                            "UPDATE hidden_status SET hidden_status=NULL, code=NULL WHERE id=?",
+                        info!("uuid exists, returning existing");
+
+                        let uuid: String = tx.query_row(
+                            "SELECT uuid FROM player_page WHERE id=?",
                             params![&id],
+                            |r| r.get(0),
                         ).unwrap();
 
-                    } else {
-                        info!("Setting hidden status to enabled");
-                        conn.execute(
-                            "UPDATE hidden_status SET hidden_status='enabled', code=NULL WHERE id=?",
+                        tx.execute(
+                            "UPDATE player_page SET code=NULL WHERE id=?",
                             params![&id]
                         ).unwrap();
+
+                        let _ = tx.commit();
+                        uuid
+                    } else {
+                        info!("uuid does not exist, creating");
+                        let uuid = Uuid::new_v4();
+                        tx.execute(
+                            "UPDATE player_page SET uuid=? WHERE id=?",
+                            params![&uuid.to_string(), &id]
+                        ).unwrap();
+
+                        tx.execute(
+                            "UPDATE player_page SET code=NULL WHERE id=?",
+                            params![&id]
+                        ).unwrap();
+
+                        let _ = tx.commit();
+                        uuid.to_string()
                     }
                 }).await;
                 drop(db_write);
-                return Json(true);
+                return Json(PollResponse { uuid });
             }
-            Json(false)
+            Json(PollResponse { uuid: "false".to_string() })
         }
     } else {
-        Json(false)
+        Json(PollResponse { uuid: "false".to_string() })
     }
 }
 
@@ -2660,4 +2727,55 @@ pub async fn player_rating_history(
     } else {
         Json(Vec::new())
     }
+}
+
+#[get("/api/player_hide/<player_uuid>")]
+pub async fn hide_player(conn: RatingsDbConn, player_uuid: String, lock: &State<DbWrite>) -> Json<bool> {
+    let db_write = lock.arc.lock().await;
+    let code = conn
+        .run(move |conn| {
+            let tx = conn.transaction().unwrap();
+
+            let uuid_exists: i64 = tx
+                .query_row(
+                    "SELECT EXISTS(SELECT 1 FROM player_page WHERE uuid=?)",
+                    params![&player_uuid],
+                    |r| r.get(0),
+                )
+                .unwrap();
+
+            if uuid_exists == 1 {
+                let exists: i64 = tx
+                    .query_row(
+                        "SELECT count(id) FROM hidden_status WHERE id=(SELECT id FROM player_page where uuid=:1) and hidden_status is not null",
+                        params![&player_uuid],
+                        |r| r.get(0),
+                    )
+                    .unwrap();
+
+                if exists > 0 {
+                    tx.execute(
+                        "UPDATE hidden_status SET hidden_status=NULL WHERE id=(SELECT id FROM player_page where uuid=:1)",
+                        params![&player_uuid],
+                    )
+                    .unwrap();
+                } else {
+                    tx.execute(
+                        "INSERT or REPLACE INTO hidden_status(id, hidden_status, notes)
+                        VALUES((SELECT id FROM player_page where uuid=:1), 'enabled', 'PlayerPageAutomated')",
+                        params![&player_uuid],
+                    )
+                    .unwrap();
+                }
+                
+                tx.commit().unwrap();
+                return true;
+            } else {
+                tx.commit().unwrap();
+                return false;
+            }
+        })
+        .await;
+        drop(db_write);
+        Json(code)
 }

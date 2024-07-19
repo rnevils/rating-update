@@ -1,0 +1,18 @@
+<!DOCTYPE html> 
+<html class="has-navbar-fixed-top">
+    <meta charset = "UTF-8">
+    <head>
+    <script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function (event) {
+        const uuid = document.getElementById('uuid');
+        if(uuid) {
+            localStorage.setItem('uuid',uuid.textContent);
+        }
+        document.location = '/player_page';
+    });
+    </script>
+    </head>
+    <body>
+        <div style="display:none;" id="uuid">{{uuid}}</div>
+    </body>
+</html>

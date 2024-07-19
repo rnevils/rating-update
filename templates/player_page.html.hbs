@@ -1,0 +1,87 @@
+<!DOCTYPE html> 
+<html class="has-navbar-fixed-top">
+    <meta charset = "UTF-8">
+    <head>
+        {{> metadata title=player_page.name}}
+    
+    <script type="text/javascript">
+    var uuid;
+
+    document.addEventListener("DOMContentLoaded", function (event) {
+        uuid = localStorage.getItem("uuid");
+        if(!uuid) {
+            document.location='/';
+        } else {
+            const uuid = localStorage.getItem('uuid');
+            if(uuid) {
+                const xhttp = new XMLHttpRequest();
+
+                xhttp.onload = function() {
+                    const data = JSON.parse(xhttp.responseText);
+                    console.log(data);
+                    if(data['id'] == 0) {
+                        localStorage.removeItem('uuid');
+                        document.location='/';
+                    }
+                    document.getElementById('player_name').textContent = data['player_name'];
+                    let hidden_status = document.getElementById('hidden_status');
+                    if(data['hidden_status']) {
+                        hidden_status.textContent = 'Enabled';
+                    } else {
+                        hidden_status.textContent = 'Not Enabled';
+                    }
+                }
+
+                xhttp.open("GET", "/api/player_page_data/"+uuid);
+                xhttp.send();
+            }
+        }
+    });
+
+    function ToggleHidden() {
+        const uuid = localStorage.getItem('uuid');
+        if(uuid) {
+            const xhttp = new XMLHttpRequest();
+
+            xhttp.onload = function() {
+                window.location.reload();
+            }
+
+            xhttp.open("GET", "/api/player_hide/"+uuid);
+            xhttp.send();
+        }
+    }
+    function ClearUuid() {
+        localStorage.removeItem('uuid');
+        document.location='/';
+    }
+    </script>
+    </head>
+    <body>
+        {{> navbar}}
+
+         <section class="section">
+            <div class="container">
+                <div class="columns is-flex-wrap-wrap-reverse">
+                    <div class="column is-three-quarters-fullhd">
+                        <div class="content">
+                            <h3>Player: <span id="player_name"></span></h3>
+                            Hidden: <span id="hidden_status"></span>
+                            <span><button class="tag is-light" onclick="ToggleHidden();">Toggle</button></span>
+                            <br />
+                            <br />
+                            <br />
+                            <br />
+                            <br />
+                            <div style="border-color:#F8B552; border-width:2px; border-style:dashed; padding:20px;">
+                                <p>Note: If you use the same browser, you can revisit this page without reauthenticating to change settings.</p>
+                                <p>If you don't want that, click <button onclick="ClearUuid();">here</button> to clear browser data.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </body>
+    {{> footer }}
+</html>
