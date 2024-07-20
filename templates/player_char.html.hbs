@@ -68,14 +68,18 @@
             <div id="modal" class="modal">
 
               <!-- Modal content -->
-              <div class="modal-content">
+              <div class="modal-content has-text-centered">
                 <div class="modal-header">
                   <span class="close">&times;</span>
-                  <h2>Opt out from rating update</h2>
+                  <h2>Claim your profile on rating update</h2>
                 </div>
                 <div class="modal-body">
-                    To opt out put the following code in your R-Code comment section: <span id="code" class="bold"></span> <span id="loader" class="loader"/></span></hr>
-                    <img src="/example.jpg"/>
+                  To confirm that this is your profile, put the following code in your R-Code comment section: <span id="code" class="bold"></span>
+                  and close the R-Code so it saves. <span style="text-decoration:underline;"><br />
+                  Press this <button onclick="startPoll('{{player.id}}');">button</button> once you've done this.</span>
+                  <br />After the profile has been confirmed you can change your R-code comment back to whatever you want.<hr>
+                  <span id="loader" class="loader" style="display:none;"/></span>
+                  <img src="/example.jpg"/>
                 </div>
 
               </div>
@@ -214,10 +218,14 @@
         <div class="modal-content">
           <div class="modal-header">
             <span class="close">&times;</span>
-            <h2>Opt out from rating update</h2>
+            <h2>Claim your profile on rating update</h2>
           </div>
           <div class="modal-body">
-            To confirm that this is your profile, put the following code in your R-Code comment section: <span id="code" class="bold"></span> <span id="loader" class="loader"/></span>, close it, and wait for this page to refresh. After the profile has been confirmed you can change your R-code comment back to whatever you want.</hr>
+            To confirm that this is your profile, put the following code in your R-Code comment section: <span id="code" class="bold"></span>
+            and close the R-Code so it saves. <span style="text-decoration:underline;"><br />
+            Press this <button onclick="startPoll('{{player.id}}');">button</button> once you've done this.</span>
+            <br />After the profile has been confirmed you can change your R-code comment back to whatever you want.<hr>
+            <span id="loader" class="loader" style="display:none;"/></span>
             <img src="/example.jpg"/>
           </div>
         </div>
@@ -365,6 +373,10 @@
     req.onreadystatechange = (e) => {
       document.getElementById("code").textContent = req.responseText.replaceAll('"', '');
     }
+  }
+
+  function startPoll(player_id) {
+    document.getElementById('loader').style.display='';
 
     timer = setInterval(() => {
       poll_player(player_id);
@@ -375,13 +387,14 @@
   function poll_player(player_id) {
     // 	✅
 
-    if (counter >= 40) {
+    if (counter >= 10) {
       clearInterval(timer);
 
       var modal = document.getElementById("modal");
       modal.style.display = "none";
 
       alert("You have idled for too long. Please retry the claim feature");
+      document.location.reload();
     }
     const req = new XMLHttpRequest();
     req.open("GET", `/api/claim/poll/${player_id}`);
@@ -397,9 +410,11 @@
           
           let loader = document.getElementById("loader");
           loader.className = "";
-          loader.textContent = "✅";  
+          loader.style = "display: block; text-align: left;";
+          loader.textContent = "✅ Refreshing...";
           setTimeout(() => {
-            document.location='/player_page_auth/' + resp['uuid'];
+            localStorage.setItem('uuid', resp['uuid']);
+            document.location='/player_page';
           }, 2000);
         }
       }

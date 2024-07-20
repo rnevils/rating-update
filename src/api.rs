@@ -1,7 +1,6 @@
 use crate::ggst_api;
 use chrono::{Duration, DateTime, Utc};
 use fxhash::FxHashMap;
-use rand::distributions::{Alphanumeric, DistString};
 use rocket::serde::{json::Json, Serialize};
 use rusqlite::{named_params, params, Connection, OptionalExtension};
 
@@ -2512,11 +2511,25 @@ pub async fn outcomes(conn: RatingsDbConn) -> Json<(Vec<i64>, Vec<f64>, Vec<f64>
         .await,
     )
 }
+fn generate_code() -> String {
+    use rand::Rng;
+    const CHARSET: &[u8] = b"ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789";
+    const STR_LEN: usize = 8;
+    let mut rng = rand::thread_rng();
+
+    let password: String = (0..STR_LEN)
+        .map(|_| {
+            let idx = rng.gen_range(0..CHARSET.len());
+            CHARSET[idx] as char
+        })
+        .collect();
+    password
+}
 
 #[get("/api/claim/<player>")]
 pub async fn start_claim_player(conn: RatingsDbConn, player: &str, lock: &State<DbWrite>) -> Json<String> {
     let id = i64::from_str_radix(&player, 16).unwrap();
-    let player_code = Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
+    let player_code = generate_code();
     let db_write = lock.arc.lock().await;
 
     let code = conn

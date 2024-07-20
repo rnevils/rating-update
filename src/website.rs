@@ -86,7 +86,6 @@ pub async fn run(arc_in: DbWrite) {
                 supporters,
                 rating_calculator,
                 player_page,
-                player_page_auth,
                 recent,
                 api::stats,
                 api::player_rating,
@@ -453,15 +452,6 @@ async fn search(conn: RatingsDbConn, name: String) -> Template {
             all_characters: CHAR_NAMES,
         },
     )
-}
-
-#[get("/player_page_auth/<uuid>")]
-async fn player_page_auth(uuid: String) -> Option<Template> {
-    #[derive(Serialize)]
-    struct Context {
-        uuid: String,
-    }
-    Some(Template::render("player_page_auth", &Context { uuid }))
 }
 
 #[get("/player_page")]
