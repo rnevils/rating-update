@@ -720,12 +720,28 @@ pub async fn search_inner(
     }
 }
 
-#[get("/api/top/<char_id>")]
-pub async fn top_char(conn: RatingsDbConn, char_id: i64) -> Json<Vec<RankingPlayer>> {
-    Json(top_char_inner(&conn, char_id).await)
+#[get("/api/top/<char_short>?<game_count>&<offset>")]
+pub async fn top_char(
+    conn: RatingsDbConn,
+    char_short: &str,
+    game_count: Option<i64>,
+    offset: Option<i64>,
+) -> Json<Vec<RankingPlayer>> {
+    let char_id =
+        website::CHAR_NAMES.iter().position(|(c, _)| *c == char_short).unwrap() as i64;
+
+    let game_count = game_count.unwrap_or(100);
+    let offset = offset.unwrap_or(0);
+
+    Json(top_char_inner(&conn, char_id, game_count, offset).await)
 }
 
-pub async fn top_char_inner(conn: &RatingsDbConn, char_id: i64) -> Vec<RankingPlayer> {
+pub async fn top_char_inner(
+    conn: &RatingsDbConn,
+    char_id: i64,
+    game_count: i64,
+    offset: i64,
+) -> Vec<RankingPlayer> {
     conn.run(move |c| {
         let mut stmt = c
             .prepare(
@@ -741,20 +757,28 @@ pub async fn top_char_inner(conn: &RatingsDbConn, char_id: i64) -> Vec<RankingPl
                  LEFT JOIN cheater_status ON cheater_status.id = player_ratings.id
                  LEFT JOIN hidden_status ON hidden_status.id = player_ratings.id
                  WHERE char_id = ?
-                 LIMIT 100
+                 LIMIT ? OFFSET ?
                  ",
             )
             .unwrap();
-        let mut rows = stmt.query(params![char_id]).unwrap();
+        let mut rows = stmt.query(params![char_id, game_count, offset]).unwrap();
 
-        let mut res = Vec::with_capacity(100);
+        let mut res = Vec::with_capacity(game_count.try_into().unwrap());
         let mut i = 1;
         while let Some(row) = rows.next().unwrap() {
-            let name = row.get("name").unwrap();
+            let hidden_status: Option<String> = row.get("hidden_status").unwrap();
+
+            let mut name: String = row.get("name").unwrap();
+            
+            //This only happens when someone hides themself before rankings are re-calculated
+            if hidden_status.is_some() {
+                name = "Hidden".to_string();
+            }
+
             let platform = row.get("platform").unwrap();
             let vip_status = row.get("vip_status").unwrap();
             let cheater_status = row.get("cheater_status").unwrap();
-            let hidden_status = row.get("hidden_status").unwrap();
+            
             res.push(RankingPlayer::from_db(
                 i,
                 name,

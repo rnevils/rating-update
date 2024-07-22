@@ -1,0 +1,88 @@
+<!DOCTYPE html> 
+<html class="has-navbar-fixed-top">
+    <meta charset = "UTF-8">
+    <head>
+        {{> metadata title=character}}
+    </head>
+    <body>
+        {{> navbar}}
+        <section class="hero is-primary">
+            <div class="hero-body has-text-centered">
+                <p class="title">{{character}} Leaderboard</p>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container">
+                <div class="content">
+                    <div class="table-container">
+                    <table id="player_table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Rating</th>
+                                <th>Games played</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <a onclick="LoadMore();">Load More</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </body>
+    <script type="text/javascript">
+
+        function LoadMore() {
+            const offset = document.getElementById('player_table').tBodies[0].rows.length;
+            fetch("/api/top/{{character_short}}?offset="+offset).then(function(response) {
+                return response.json();
+            }).then(function(rawData) {
+                for(var row in rawData) {
+                    addRow(rawData[row], offset);
+                }
+            });
+        }
+
+        function addRow(row, offset) {
+            var player_content = document.getElementById('player_table').getElementsByTagName('tbody')[0];
+            var newRow = player_content.insertRow();
+            var existing_row_count = document.getElementById('player_table').tBodies[0].rows.length;
+
+            newRow.insertCell(0).innerHTML = offset + parseInt(row['pos']);
+
+            if(row['hidden_status']) {
+                newRow.insertCell(1).innerHTML = 'Hidden';
+                newRow.insertCell(2).innerHTML = 'Hidden';
+                newRow.insertCell(3).innerHTML = 'Hidden';
+            } else {
+                var player_td = newRow.insertCell(1);
+                player_td.innerHTML = '<a href="/player/'+row['id']+'/'+row['character_short'] + '" class="maybe_long_name" title="'+row['name']+'">'+row['name']+'</a>';
+                player_td.innerHTML += '\n<span class="has-text-grey">' + row['platform']+'</span>';
+                if(row['vip_status']) {
+                    player_td.innerHTML += '\n<span class="tag is-warning" title="This user supports the site!">VIP</span>';
+                }
+
+                if(row['cheater_status']) {
+                    player_td.innerHTML += '\n<span class="tag is-danger">(Cheater)</span>';
+                }
+                newRow.insertCell(2).innerHTML = row['rating_value'] + ' ±' + row['rating_deviation'];
+                newRow.insertCell(3).innerHTML = row['game_count'];
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function (event) {
+        fetch("/api/top/{{character_short}}?").then(function(response) {
+            return response.json();
+        }).then(function(rawData) {
+            for(var row in rawData) {
+                addRow(rawData[row], 0);
+            }
+        });
+    });
+    </script>
+
+    {{> footer }}
+</html>
