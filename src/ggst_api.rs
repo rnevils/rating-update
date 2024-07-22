@@ -154,10 +154,12 @@ fn decrypt_response<T: for<'a> Deserialize<'a>>(
         Ok(r) => Ok(r),
         Err(e) => {
             error!("Error in received msgpack!");
-            println!();
+            let mut owned_string: String = "".to_owned();
+
             for b in &decrypted {
-                print!("{:02X}", b);
+                owned_string.push_str(&format!("{:02X}", b));
             }
+            error!("{:?}", owned_string);
 
             Err(Box::new(e))
         }
