@@ -27,7 +27,7 @@
                         <tbody>
                         </tbody>
                     </table>
-                    <a onclick="LoadMore();">Load More</a>
+                    <a id="load_more" onclick="LoadMore();">Load More</a>
                     </div>
                 </div>
             </div>
@@ -42,6 +42,10 @@
             }).then(function(rawData) {
                 for(var row in rawData) {
                     addRow(rawData[row], offset);
+                }
+
+                if(offset == 900 || rawData.length < 100) {
+                    document.getElementById('load_more').hidden = true;
                 }
             });
         }
@@ -74,7 +78,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", function (event) {
-        fetch("/api/top/{{character_short}}?").then(function(response) {
+        fetch("/api/top/{{character_short}}").then(function(response) {
             return response.json();
         }).then(function(rawData) {
             for(var row in rawData) {
