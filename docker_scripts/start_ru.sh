@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source .env
+# source .env
 
 STEAM_API_LIB=`find /rating-update/target/release/build/ -name libsteam_api.so`
 

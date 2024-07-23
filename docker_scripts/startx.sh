@@ -5,5 +5,4 @@ Xvfb $DISPLAY -screen 0 1920x1080x16 &
 sleep 1
 x11vnc -nodpms -forever -nopw &
 sleep 1
-/usr/games/steam &
-tail -f /dev/null #just prevent docker from exiting
+/usr/games/steam

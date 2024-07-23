@@ -9,6 +9,7 @@ FROM ubuntu:latest
 
 RUN mkdir /app
 COPY docker_scripts/startx.sh /app
+COPY docker_scripts/start_ru.sh /app
 COPY --from=builder /rating-update /rating-update
 
 ENV TZ=Etc/UTC
