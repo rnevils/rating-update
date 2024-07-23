@@ -30,6 +30,7 @@
             {{/each}}
           </div>
         </div>
+        <a id="settings_page_link" class="navbar-item" style="display:none;" href="/player_page">Settings</a>
 	</div>
     <div class="navbar-end">
         <div class="navbar-item">
@@ -100,6 +101,9 @@
   document.addEventListener("DOMContentLoaded", function (event) {
     updateNavbarDateTime();
     setInterval(updateNavbarDateTime, 10000);
+    if(localStorage.getItem('uuid')) {
+      document.getElementById('settings_page_link').style.display='';
+    }
   });
 
 </script>

@@ -68,14 +68,18 @@
             <div id="modal" class="modal">
 
               <!-- Modal content -->
-              <div class="modal-content">
+              <div class="modal-content has-text-centered">
                 <div class="modal-header">
                   <span class="close">&times;</span>
-                  <h2>Opt out from rating update</h2>
+                  <h2>Claim your profile on rating update</h2>
                 </div>
                 <div class="modal-body">
-                    To opt out put the following code in your R-Code comment section: <span id="code" class="bold"></span> <span id="loader" class="loader"/></span></hr>
-                    <img src="/example.jpg"/>
+                  To confirm that this is your profile, put the following code in your R-Code comment section: <span id="code" class="bold"></span>
+                  and close the R-Code so it saves. <span style="text-decoration:underline;"><br />
+                  Press this <button onclick="startPoll('{{player.id}}');">button</button> once you've done this.</span>
+                  <br />After the profile has been confirmed you can change your R-code comment back to whatever you want.<hr>
+                  <span id="loader" class="loader" style="display:none;"/></span>
+                  <img src="/example.jpg"/>
                 </div>
 
               </div>
@@ -136,21 +140,25 @@
           {{#if player.data.matchups}}
           <h2>Matchups</h2>
           <div class="table-container">
-            <table>
+            <table  class="sortable">
+              <thead>
               <tr>
-                <th>Matchup</th>
-                <th>Games</th>
-                <th>Win rate</th>
-                <th>Rating offset</th>
+                <th style="cursor: pointer;">Matchup<i class="fas fa-sort"></i></th>
+                <th style="cursor: pointer;">Games<i class="fas fa-sort"></i></th>
+                <th style="cursor: pointer;">Win rate<i class="fas fa-sort"></i></th>
+                <th style="cursor: pointer;">Rating offset<i class="fas fa-sort"></i></th>
               </tr>
+              </thead>
+              <tbody>
               {{#each player.data.matchups}}
               <tr>
                 <td>{{this.character}}</td>
-                <td class="centered">{{this.game_count}}</td>
-                <td class="centered">{{this.win_rate}}%</td>
-                  <td title="{{this.rating}} ±{{this.rating_deviation}}" class="{{this.rating_change_class}} centered">{{this.rating_offset}}</td>
+                <td data-sort="{{this.game_count}}" class="centered">{{this.game_count}}</td>
+                <td data-sort="{{this.win_rate}}" class="centered">{{this.win_rate}}%</td>
+                <td data-sort="{{this.rating}}" title="{{this.rating}} ±{{this.rating_deviation}}" class="{{this.rating_change_class}} centered">{{this.rating_offset}}</td>
               </tr>
               {{/each}}
+              </tbody>
               <tr>
                 <td><b>Overall</b></td>
                 <td class="centered"><b>{{player.data.game_count}}</b></td>
@@ -159,9 +167,11 @@
               </tr>
             </table>
           </div>
+          <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@latest/sortable.min.js"></script>
           {{/if}}
           <div>
-            <button class="tag is-danger is-medium" onclick="toggle_profile('{{player.id}}');">Hide my profile</button>
+            <button class="tag is-danger is-medium" onclick="toggle_profile('{{player.id}}');">Claim my profile</button>
+            <br/><span>Use this to hide your profile.</span>
           </div>
         </div>
       </div>
@@ -208,10 +218,14 @@
         <div class="modal-content">
           <div class="modal-header">
             <span class="close">&times;</span>
-            <h2>Opt out from rating update</h2>
+            <h2>Claim your profile on rating update</h2>
           </div>
           <div class="modal-body">
-            To confirm that this is your profile, put the following code in your R-Code comment section: <span id="code" class="bold"></span> <span id="loader" class="loader"/></span>, close it, and wait for this page to refresh. After the profile has been confirmed you can change your R-code comment back to whatever you want.</hr>
+            To confirm that this is your profile, put the following code in your R-Code comment section: <span id="code" class="bold"></span>
+            and close the R-Code so it saves. <span style="text-decoration:underline;"><br />
+            Press this <button onclick="startPoll('{{player.id}}');">button</button> once you've done this.</span>
+            <br />After the profile has been confirmed you can change your R-code comment back to whatever you want.<hr>
+            <span id="loader" class="loader" style="display:none;"/></span>
             <img src="/example.jpg"/>
           </div>
         </div>
@@ -348,16 +362,21 @@
 
 
   function toggle_profile(player_id) {
+    clearTimeout(timeout);
     var modal = document.getElementById("modal");
     modal.style.display = "block";
 
     const req = new XMLHttpRequest();
-    req.open("GET", `/api/hide/${player_id}`);
+    req.open("GET", `/api/claim/${player_id}`);
     req.send();
 
     req.onreadystatechange = (e) => {
       document.getElementById("code").textContent = req.responseText.replaceAll('"', '');
     }
+  }
+
+  function startPoll(player_id) {
+    document.getElementById('loader').style.display='';
 
     timer = setInterval(() => {
       poll_player(player_id);
@@ -368,28 +387,36 @@
   function poll_player(player_id) {
     // 	✅
 
-    if (counter >= 40) {
+    if (counter >= 10) {
       clearInterval(timer);
 
       var modal = document.getElementById("modal");
       modal.style.display = "none";
 
-      alert("You have idled for too long. Please retry the hide feature");
+      alert("You have idled for too long. Please retry the claim feature");
+      document.location.reload();
     }
     const req = new XMLHttpRequest();
-    req.open("GET", `/api/hide/poll/${player_id}`);
+    req.open("GET", `/api/claim/poll/${player_id}`);
     req.send();
 
     req.onreadystatechange = (e) => {
-      if (req.readyState == 4 && req.status == 200 && req.response != 'false') {
-        clearInterval(timer);
-        let loader = document.getElementById("loader");
-        loader.className = "";
-        loader.textContent = "✅";  
-        setTimeout(() => {
-          location.reload();
-        }, 5000);
-
+      
+      if (req.readyState == 4 && req.status == 200) {
+        const resp = JSON.parse(req.response);
+        
+        if(resp['uuid'] != 'false') {
+          clearInterval(timer);
+          
+          let loader = document.getElementById("loader");
+          loader.className = "";
+          loader.style = "display: block; text-align: left;";
+          loader.textContent = "✅ Refreshing...";
+          setTimeout(() => {
+            localStorage.setItem('uuid', resp['uuid']);
+            document.location='/player_page';
+          }, 2000);
+        }
       }
     }
 

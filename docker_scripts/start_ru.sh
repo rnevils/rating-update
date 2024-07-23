@@ -11,7 +11,7 @@ while true; do
 	fi;
 
 	LD_PRELOAD="$STEAM_API_LIB" target/release/rating-update $@
-	mv "${LOGFILE_PATH}" /data/crash-`date -I`.log
+	mv "${LOGFILE_PATH}" /data/crash-`date +%s`.log
 	sleep 5
 done;
 

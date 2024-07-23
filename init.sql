@@ -226,7 +226,6 @@ CREATE TABLE hidden_status (
     id INTEGER NOT NULL,
     hidden_status TEXT,
     notes TEXT NOT NULL,
-    code TEXT,
     PRIMARY KEY(id)
 );
 
@@ -235,10 +234,12 @@ CREATE TABLE config (
     last_update INTEGER NOT NULL
 );
 
-CREATE TABLE hits (
-    page TEXT NOT NULL,
-    hit_count INTEGER NOT NULL,
-    PRIMARY KEY(page)
+CREATE TABLE player_page (
+    id TEXT NOT NULL,
+    code TEXT,
+    uuid TEXT,
+    PRIMARY KEY(id)
 );
+CREATE INDEX player_uuid ON player_page(uuid);
 
 INSERT INTO config VALUES(1675132574);

@@ -1,4 +1,5 @@
 #![feature(proc_macro_hygiene, decl_macro)]
+use log::error;
 use simplelog::*;
 use std::{fs::File, ops::Deref};
 use tokio::try_join;
@@ -111,7 +112,7 @@ async fn main() {
                 },
                 rater::run(db_write_arc)
             ) {
-                eprintln!("{:?}", err);
+                error!("{:?}", err);
                 std::process::exit(1);
             }
         }

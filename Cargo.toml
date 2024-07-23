@@ -32,6 +32,7 @@ steamworks = { git = "https://github.com/Noxime/steamworks-rs.git"}
 rand = "0.8.5"
 async-std = "1.12.0"
 dotenv = "0.15.0"
+uuid = {version = "1.10.0", features = ["v4", "fast-rng"]}
 
 [dev-dependencies]
 criterion = { version = "0.3", features = ["async_tokio"] }

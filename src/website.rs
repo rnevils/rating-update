@@ -85,6 +85,7 @@ pub async fn run(arc_in: DbWrite) {
                 stats,
                 supporters,
                 rating_calculator,
+                player_page,
                 recent,
                 api::stats,
                 api::player_rating,
@@ -103,9 +104,11 @@ pub async fn run(arc_in: DbWrite) {
                 api::active_players,
                 api::daily_games,
                 api::weekly_games,
-                api::start_hide_player,
-                api::poll_hide_player,
-                api::player_rating_history
+                api::start_claim_player,
+                api::poll_claim_player,
+                api::player_rating_history,
+                api::hide_player,
+                api::get_player_page_data,
             ],
         )
         .register("/", catchers![catch_404, catch_500, catch_503])
@@ -202,10 +205,9 @@ async fn top_all(conn: RatingsDbConn) -> Cached<Template> {
 }
 
 #[get("/top/<character_short>")]
-async fn top_char(conn: RatingsDbConn, character_short: &str) -> Option<Cached<Template>> {
+async fn top_char(character_short: &str) -> Option<Cached<Template>> {
     #[derive(Serialize)]
     struct Context {
-        players: Vec<api::RankingPlayer>,
         character: &'static str,
         character_short: &'static str,
         all_characters: &'static [(&'static str, &'static str)],
@@ -214,15 +216,13 @@ async fn top_char(conn: RatingsDbConn, character_short: &str) -> Option<Cached<T
     if let Some(char_code) = CHAR_NAMES.iter().position(|(c, _)| *c == character_short) {
         let (character_short, character) = CHAR_NAMES[char_code];
 
-        let players = api::top_char_inner(&conn, char_code as i64).await;
         let context = Context {
-            players,
             character,
             character_short,
             all_characters: CHAR_NAMES,
         };
 
-        Some(Cached::new(Template::render("top_100_char", &context), 999))
+        Some(Cached::new(Template::render("top_char", &context), 999))
     } else {
         None
     }
@@ -449,6 +449,15 @@ async fn search(conn: RatingsDbConn, name: String) -> Template {
             all_characters: CHAR_NAMES,
         },
     )
+}
+
+#[get("/player_page")]
+async fn player_page() -> Option<Template> {
+    #[derive(Serialize)]
+    struct Context {
+        all_characters: &'static [(&'static str, &'static str)],
+    }
+    Some(Template::render("player_page", &Context { all_characters: CHAR_NAMES }))
 }
 
 #[get("/recent")]
