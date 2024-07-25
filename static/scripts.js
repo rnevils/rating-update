@@ -61,6 +61,92 @@ const load_history = () => {
             if (localDate) {
               formatUTCToLocal()
             }
+
+            document.querySelectorAll('.SO').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Sol_Badguy";
+            });
+            document.querySelectorAll('.KY').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Ky_Kiske";
+            });
+            document.querySelectorAll('.MA').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/May";
+            });
+            document.querySelectorAll('.AX').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Axl_Low";
+            });
+            document.querySelectorAll('.CH').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Chipp_Zanuff";
+            });
+            document.querySelectorAll('.PO').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Potemkin";
+            });
+            document.querySelectorAll('.FA').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Faust";
+            });
+            document.querySelectorAll('.MI').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Millia_Rage";
+            });
+            document.querySelectorAll('.ZA').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Zato-1";
+            });
+            document.querySelectorAll('.RA').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Ramlethal_Valentine";
+            });
+            document.querySelectorAll('.LE').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Leo_Whitefang";
+            });
+            document.querySelectorAll('.NA').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Nagoriyuki";
+            });
+            document.querySelectorAll('.GI').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Giovanna";
+            });
+            document.querySelectorAll('.AN').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Anji_Mito";
+            });
+            document.querySelectorAll('.IN').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/I-No";
+            });
+            document.querySelectorAll('.GO').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Goldlewis_Dickinson";
+            });
+            document.querySelectorAll('.JC').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Jack-O";
+            });
+            document.querySelectorAll('.HA').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Happy_Chaos";
+            });
+            document.querySelectorAll('.BA').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Baiken";
+            });
+            document.querySelectorAll('.TE').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Testament";
+            });
+            document.querySelectorAll('.BI').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Bridget";
+            });
+            document.querySelectorAll('.SI').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Sin_Kiske";
+            });
+            document.querySelectorAll('.BE').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Bedman";
+            });
+            document.querySelectorAll('.AS').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Asuka_R";
+            });
+            document.querySelectorAll('.JN').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Johnny";
+            });
+            document.querySelectorAll('.EL').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Elphelt_Valentine";
+            });
+            document.querySelectorAll('.AB').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/A.B.A";
+            });
+            document.querySelectorAll('.SL').forEach(function(t) {
+              t.href="https://www.dustloop.com/w/GGST/Slayer";
+            });
+
         }
     };
     console.log('requesting history');
