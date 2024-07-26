@@ -41,7 +41,7 @@ pub async fn get_token() -> Result<String, String> {
     {
         let token = TOKEN.lock().await;
         if let Some(t) = token.deref() {
-            info!("Already have a token");
+            info!("Already have a strive token");
             return Ok(t.to_owned());
         }
     }

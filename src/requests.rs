@@ -9,6 +9,7 @@ lazy_static! {
     static ref STEAM_HEX: String = dotenv::var("STEAM_HEX").expect("STEAM_HEX must be set.");
     static ref VERSION: String = dotenv::var("API_VERSION").expect("API_VERSION must be set.");
     static ref PLAYER_ID: String = dotenv::var("PLAYER_ID").expect("PLAYER_ID must be set.");
+    pub static ref STEAM_TOKEN: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(Option::None));
 }
 
 const STEAM_APP_ID: u32 = 1384160;
@@ -131,10 +132,8 @@ pub async fn generate_login_request() -> Request<LoginRequest> {
     let (client, single) = Client::init_app(STEAM_APP_ID).unwrap();
     let user = client.user();
 
-    let token = Arc::new(Mutex::new(Option::None));
-    {
-        let token = token.clone();
-
+    let token = STEAM_TOKEN.clone();
+    if !token.clone().try_lock().unwrap().is_some() {
         let _cb = client.register_callback(move |v: TicketForWebApiResponse| {
             //println!("Got webapi auth response: {:?}", v)
             let hex: String = v
@@ -146,6 +145,8 @@ pub async fn generate_login_request() -> Request<LoginRequest> {
             info!("Login steam token for strive {}", hex);
             *token.try_lock().unwrap() = Some(hex);
         });
+    } else {
+        info!("Already have steam token.");
     };
 
     user.authentication_session_ticket_for_webapi("ggst-game.guiltygear.com");
@@ -154,7 +155,7 @@ pub async fn generate_login_request() -> Request<LoginRequest> {
         single.run_callbacks();
         std::thread::sleep(::std::time::Duration::from_millis(100));
 
-        let steam_token = token.try_lock().unwrap();
+        let steam_token = STEAM_TOKEN.try_lock().unwrap();
 
         if steam_token.is_some() {
             let steam_token = steam_token.clone().unwrap();
