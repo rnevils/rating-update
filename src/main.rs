@@ -40,7 +40,7 @@ fn init_logging() {
     }
 }
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 10)]
+#[rocket::main]
 async fn main() {
     dotenv().expect("dotenv failed");
     init_logging();
