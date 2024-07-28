@@ -1,3 +1,27 @@
+<style>
+  .tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 60px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  top: -5px;
+  right: 105%;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+</style>
 <nav class="navbar is-fixed-top is-danger" role="navigation" aria-label="main navigation">
   <div class="navbar-brand">
     <a class="navbar-item" href="/">
@@ -36,12 +60,14 @@
         <div class="navbar-item">
 			    <form action="/" method="get">
             <div class="field is-grouped">
-              <p class="control">
+              <p class="control" style="width:150px;">
                 <input class="input" type="text" id="name" name="name" required autocomplete="on" placeholder="GG Player">
               </p>
-              <p class="control">
-                <button class="button is-primary" type="submit"><span class="icon"><i class="fas fa-search"></i></span></button>
+              <p class="control tooltip" style="margin-right:3px;">
+                <input type="checkbox" name="exact"/>
+                <span class="tooltiptext">Exact?</span>
               </p>
+              <button class="button is-primary" type="submit"><span class="icon"><i class="fas fa-search"></i></span></button>
             </div>
 			    </form>
       	</div>
@@ -58,6 +84,14 @@
           <span class="icon-text">
             <span class="icon">
               <i class="fab fa-github"></i>
+            </span>
+            <span></span>
+          </span>
+        </a>
+        <a class="navbar-item" href="https://patreon.com/nemasu" target="_blank">
+          <span class="icon-text">
+            <span class="icon">
+              <i class="fab fa-patreon"></i>
             </span>
             <span></span>
           </span>

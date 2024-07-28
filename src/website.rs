@@ -430,8 +430,8 @@ async fn player_char(
     }
 }
 
-#[get("/?<name>")]
-async fn search(conn: RatingsDbConn, name: String) -> Template {
+#[get("/?<name>&<exact>")]
+async fn search(conn: RatingsDbConn, name: String, exact: Option<bool>) -> Template {
     #[derive(Serialize)]
     struct Context {
         search_string: String,
@@ -439,7 +439,7 @@ async fn search(conn: RatingsDbConn, name: String) -> Template {
         all_characters: &'static [(&'static str, &'static str)],
     }
 
-    let players = api::search_inner(&conn, name.clone(), false).await;
+    let players = api::search_inner(&conn, name.clone(), exact.unwrap_or(false)).await;
 
     Template::render(
         "search_results",
