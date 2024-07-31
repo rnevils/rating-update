@@ -136,9 +136,7 @@ pub async fn update_statistics(
         info!("New statistics period, updating statistics.");
         *last_statistics_update = *last_ranking_update;
         update_player_distribution(conn);
-        //if let Err(e) = calc_versus_matchups(&mut conn) {
-        //    error!("calc_versus_matchups failed: {}", e);
-        //}
+        
         if let Err(e) = calc_fraud_index(conn) {
             error!("calc_fraud_index failed: {}", e);
         }
@@ -182,13 +180,8 @@ pub async fn update_once() {
         update_rankings(&mut conn).unwrap();
     }
 
-    //let last_rating_timestamp: i64 = conn
-    //    .query_row("SELECT last_update FROM config", [], |r| r.get(0))
-    //    .unwrap();
     update_player_distribution(&mut conn);
-    //if let Err(e) = calc_versus_matchups(&mut conn) {
-    //    error!("calc_versus_matchups failed: {}", e);
-    //}
+
     if let Err(e) = calc_fraud_index(&mut conn) {
         error!("calc_fraud_index failed: {}", e);
     }
@@ -672,8 +665,6 @@ fn update_ratings(conn: &mut Connection, games: Option<Vec<Game>>) -> i64 {
         (games, remaining)
     });
 
-    //let popularities =
-
     //Fetch all the players in the games
     let mut players = FxHashMap::default();
     for g in &games {
@@ -767,8 +758,6 @@ fn update_ratings(conn: &mut Connection, games: Option<Vec<Game>>) -> i64 {
     };
 
     let mut counter = 0;
-
-    //let mut last_timestamp = 0;
 
     let popularities = {
         let mut stmt = tx
@@ -1458,23 +1447,6 @@ fn decay_matchups(conn: &mut Connection, _timestamp: i64) -> Result<()> {
     })?;
 
     let tx = conn.transaction()?;
-
-    //tx.execute(
-    //    "UPDATE player_matchups
-    //    SET rating_deviation = min(
-    //             :initial_deviation,
-    //             sqrt(rating_deviation * rating_deviation + :c * :c)),
-    //        rating_timestamp = :timestamp
-    //    WHERE
-    //        rating_deviation < :initial_deviation AND
-    //        rating_timestamp + :rating_period < :timestamp",
-    //    named_params! {
-    //        ":initial_deviation": glicko::INITIAL_DEVIATION,
-    //        ":c": DECAY_CONSTANT,
-    //        ":timestamp": timestamp,
-    //        ":rating_period": RATING_PERIOD,
-    //    },
-    //)?;
 
     tx.execute(
         "UPDATE global_matchups
