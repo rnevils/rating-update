@@ -3,6 +3,18 @@
     <meta charset = "UTF-8">
     <head>
         {{> metadata title="About" }}
+        <script type="text/javascript">
+        function DoRcodeConvert() {
+            const rcode = document.getElementById('rcode').value;
+            if(rcode) {
+                const hexNum = BigInt(rcode).toString(16).toUpperCase();
+                window.open(
+                    '/player/'+hexNum,
+                    '_blank'
+                );
+            }
+        }
+        </script>
     </head>
     <body>
         {{> navbar}}
@@ -27,6 +39,7 @@
                         <li><a href="#No_rating">Why don't all games have a rating change?</a></li>
                         <li><a href="#Hidden_users">Why are some users hidden?</a></li>
                         <li><a href="#Missing_games">Some of my games are missing.</a></li>
+                        <li><a href="#Find_page">My page is hidden, how do I find it?</a></li>
                         <li><a href="#Questions">My question wasn't answered here.</a></li>
                     </ul>
 
@@ -88,6 +101,12 @@
 
                     <h2 id="Missing_games">Some of my games are missing.</h2>
                     <p>The site only looks at replays from the tower, so if you've been playing in the park those games won't show up.</p>
+
+                    <h2 id="Find_page">My page is hidden, how do I find it?</h2>
+                    <p>If you're using the same browser you hid it with, there might be a "Settings" button beside the Characters list at the top. You can use this to unhide.</p>
+                    <p>If you don't have that, find your R-Code number, it looks like this:</p>
+                    <img src="/rcode.png">
+                    <p>Then enter it here: <input type="text" id="rcode"> and press <button onclick="DoRcodeConvert();">this</button>.</p>
 
                     <h2 id="Questions">My question wasn't answered here.</h2>
                     <p>Join <a href="https://discord.gg/vY4mE8exXB">Discord</a>, or send me a message on <a href="https://twitter.com/_nemasu_" target="_blank">Twitter</a>.</p>
