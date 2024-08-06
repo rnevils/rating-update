@@ -59,8 +59,23 @@ pub async fn get_token() -> Result<String, String> {
         .header("x-client-version", "1")
         .form(&[("data", request_data)]);
 
-    let response = form.send().await.unwrap();
-    let response_bytes = response.bytes().await.unwrap();
+    //Add logging before panic.
+    let response = match form.send().await {
+        Ok(resp) => resp,
+        Err(err) => {
+            error!("get_token send() error: {}", err);
+            panic!(); //force crash to restart server
+        }
+    };
+
+    let response_bytes = match response.bytes().await {
+        Ok(resp_bytes) => resp_bytes,
+        Err(err) => {
+            error!("get_token bytes() error: {}", err);
+            panic!(); //force crash to restart server
+        }
+    };
+    
     info!("Waiting for strive token");
 
     let mut t = TOKEN.lock().await;
