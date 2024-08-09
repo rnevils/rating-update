@@ -178,5 +178,6 @@ pub async fn generate_login_request() -> Request<LoginRequest> {
         }
     }
 
-    panic!("Timed out");
+    error!("Timed out waiting for steam token");
+    panic!();
 }
