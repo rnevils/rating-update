@@ -1,0 +1,33 @@
+- name: Configure gg-mmr Service
+  hosts: myhosts
+  remote_user: rnevils
+  tasks:
+    - name: Create quadlet config directory
+      ansible.builtin.file:
+        path: /home/rnevils/.config/containers/systemd
+        state: directory
+        mode: "0744"
+
+    - name: Copy gg-mmr.container unit file
+      ansible.builtin.copy:
+        src: ./podman-systemd-service-units/gg-mmr.container
+        dest: /home/rnevils/.config/containers/systemd/gg-mmr.container
+        owner: rnevils
+        group: rnevils
+        mode: "0644"
+
+    - name: Copy gg-mmr.pod unit file
+      ansible.builtin.copy:
+        src: ./podman-systemd-service-units/gg-mmr.pod
+        dest: /home/rnevils/.config/containers/systemd/gg-mmr.pod
+        owner: rnevils
+        group: rnevils
+        mode: "0644"
+
+    - name: Restart gg-mmr service
+      ansible.builtin.systemd_service:
+        name: gg-mmr-pod.service
+        scope: user
+        state: restarted
+        daemon_reload: true
+        enabled: true

@@ -1,0 +1,6 @@
+[Container]
+AutoUpdate=registry
+ContainerName=rating-update
+Environment=TZ="America/Chicago"
+Image=ghcr.io/rnevils/rating-update:dev-latest
+Pod=rating-updates.pod
