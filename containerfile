@@ -1,4 +1,4 @@
-FROM ghcr.io/rustlang/rust:nightly AS BUILD
+FROM rustlang/rust:nightly AS BUILD
 
 WORKDIR /build
 COPY . .
