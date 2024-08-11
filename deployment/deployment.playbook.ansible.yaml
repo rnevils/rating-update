@@ -1,5 +1,5 @@
-- name: Configure gg-mmr Service
-  hosts: myhosts
+- name: Configure rating-update Service
+  hosts: all
   remote_user: rnevils
   tasks:
     - name: Create quadlet config directory
@@ -8,25 +8,25 @@
         state: directory
         mode: "0744"
 
-    - name: Copy gg-mmr.container unit file
+    - name: Copy rating-update.container unit file
       ansible.builtin.copy:
-        src: ./podman-systemd-service-units/gg-mmr.container
-        dest: /home/rnevils/.config/containers/systemd/gg-mmr.container
+        src: ./podman-systemd-service-units/rating-update.container
+        dest: /home/rnevils/.config/containers/systemd/rating-update.container
         owner: rnevils
         group: rnevils
         mode: "0644"
 
-    - name: Copy gg-mmr.pod unit file
+    - name: Copy rating-update.pod unit file
       ansible.builtin.copy:
-        src: ./podman-systemd-service-units/gg-mmr.pod
-        dest: /home/rnevils/.config/containers/systemd/gg-mmr.pod
+        src: ./podman-systemd-service-units/rating-update.pod
+        dest: /home/rnevils/.config/containers/systemd/rating-update.pod
         owner: rnevils
         group: rnevils
         mode: "0644"
 
-    - name: Restart gg-mmr service
+    - name: Restart rating-update service
       ansible.builtin.systemd_service:
-        name: gg-mmr-pod.service
+        name: rating-update-pod.service
         scope: user
         state: restarted
         daemon_reload: true
