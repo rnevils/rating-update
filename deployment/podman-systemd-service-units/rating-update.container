@@ -2,5 +2,5 @@
 AutoUpdate=registry
 ContainerName=rating-update
 Environment=TZ="America/Chicago"
-Image=rnevils/rating-update:dev-latest
+Image=localhost/rnevils/rating-update:dev-latest
 Pod=rating-updates.pod
